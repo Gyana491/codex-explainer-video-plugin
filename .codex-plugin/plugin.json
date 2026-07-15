@@ -1,6 +1,6 @@
 {
-  "name": "explainer-video-studio",
-  "version": "0.1.1+codex.20260715195920",
+  "name": "codex-explainer-video-plugin",
+  "version": "0.1.1+codex.20260715212126",
   "description": "Create storyboard-based explainer videos using Codex image generation, Real-ESRGAN upscaling, OpenAI voiceover, and local FFmpeg composition.",
   "author": {
     "name": "Gyana Ranjan Mohanta"

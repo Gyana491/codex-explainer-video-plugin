@@ -1,14 +1,14 @@
 {
-  "name": "local-explainer-plugins",
+  "name": "codex-explainer-video-plugin",
   "interface": {
-    "displayName": "Local Explainer Plugins"
+    "displayName": "Codex Explainer Video Plugin"
   },
   "plugins": [
     {
-      "name": "explainer-video-studio",
+      "name": "codex-explainer-video-plugin",
       "source": {
         "source": "local",
-        "path": "./"
+        "path": "./../../"
       },
       "policy": {
         "installation": "AVAILABLE",
