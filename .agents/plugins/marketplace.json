@@ -7,8 +7,9 @@
     {
       "name": "codex-explainer-video-plugin",
       "source": {
-        "source": "local",
-        "path": "./../../"
+        "source": "url",
+        "url": "https://github.com/Gyana491/codex-explainer-video-plugin.git",
+        "ref": "master"
       },
       "policy": {
         "installation": "AVAILABLE",
