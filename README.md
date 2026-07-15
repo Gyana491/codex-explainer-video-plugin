@@ -47,7 +47,7 @@ Confirm that `codex-explainer-video-plugin` appears in the installed plugin list
 In a new Codex task, try:
 
 ```text
-Create a 40-second explainer video about how solar panels work.
+Create a 4-minute explainer video about how solar panels work. Use enough scenes for frequent visual changes, and place every exact 16:9 scene panel inside one exact 16:9 master storyboard.
 ```
 
 ## Reinstall or update

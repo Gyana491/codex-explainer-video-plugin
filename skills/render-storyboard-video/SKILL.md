@@ -10,10 +10,11 @@ Use the configured `explainer-media` MCP server. Read `upscaledImageUrl` from `u
 1. Preserve the source image without filters.
 2. Call `explainer-media.upscale_image` unless the supplied image is already sufficiently large.
 3. Call `explainer-media.generate_voiceover` when no narration audio is supplied, then measure the actual audio duration with `ffprobe`.
-4. Derive scene timing from the script's visual beats and the measured voiceover duration. Do not impose a fixed scene count; use only the panels the script and audio require, up to 24.
-5. Crop exact storyboard panels into individual scene files. Require each crop to satisfy `width * 9 = height * 16`. Reject square, portrait, approximate, or mixed-ratio panels, and never stretch artwork to force the ratio.
-6. Build a concat or filter-complex FFmpeg render with subtle motion.
-7. Add subtitles from the narration when requested.
-8. Export H.264 MP4 with AAC audio and `yuv420p`.
-9. Verify that the duration is no more than 8 minutes, the scene count is no more than 24, every scene is exact 16:9, and the final file has valid dimensions, audio, and playback.
-10. When correcting one scene, replace only that scene and rerender.
+4. Derive scene timing from the script's visual beats and the measured voiceover duration. Aim for 10-12 seconds per scene and allow no ordinary still panel to remain longer than 15 seconds. For a 4-8 minute video, require at least `ceil(duration_seconds / 15)` scenes and use no more than 49.
+5. Require the master storyboard itself to be exact 16:9 and its declared layout to be a square equal-cell grid (`rows = columns = ceil(sqrt(scene_count))`). Scenes must occupy cells in row-major order; ignore only declared trailing unused cells.
+6. Crop exact storyboard panels into individual scene files. Require each crop to satisfy `width * 9 = height * 16`. Allow only a one-pixel rounding trim when grid division requires it. Reject square, portrait, approximate, missing, merged, or mixed-ratio panels, and never stretch artwork to force the ratio.
+7. Build a concat or filter-complex FFmpeg render with subtle motion.
+8. Add subtitles from the narration when requested.
+9. Export H.264 MP4 with AAC audio and `yuv420p`.
+10. Verify that the duration is 4-8 minutes unless the user explicitly requested shorter, the scene cadence passes the 15-second maximum-static check, the scene count is no more than 49, the master and every scene are exact 16:9, and the final file has valid dimensions, audio, and playback.
+11. When correcting one scene, replace only that scene and rerender.
