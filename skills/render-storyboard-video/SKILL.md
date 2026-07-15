@@ -9,10 +9,11 @@ Use the configured `explainer-media` MCP server. Read `upscaledImageUrl` from `u
 
 1. Preserve the source image without filters.
 2. Call `explainer-media.upscale_image` unless the supplied image is already sufficiently large.
-3. Crop exact storyboard panels into individual scene files.
-4. Call `explainer-media.generate_voiceover` when no narration audio is supplied.
-5. Build a concat or filter-complex FFmpeg render with subtle motion.
-6. Add subtitles from the narration when requested.
-7. Export H.264 MP4 with AAC audio and `yuv420p`.
-8. Verify dimensions, duration, audio stream, and playback.
-9. When correcting one scene, replace only that scene and rerender.
+3. Call `explainer-media.generate_voiceover` when no narration audio is supplied, then measure the actual audio duration with `ffprobe`.
+4. Derive scene timing from the script's visual beats and the measured voiceover duration. Do not impose a fixed scene count; use only the panels the script and audio require, up to 24.
+5. Crop exact storyboard panels into individual scene files. Require each crop to satisfy `width * 9 = height * 16`. Reject square, portrait, approximate, or mixed-ratio panels, and never stretch artwork to force the ratio.
+6. Build a concat or filter-complex FFmpeg render with subtle motion.
+7. Add subtitles from the narration when requested.
+8. Export H.264 MP4 with AAC audio and `yuv420p`.
+9. Verify that the duration is no more than 8 minutes, the scene count is no more than 24, every scene is exact 16:9, and the final file has valid dimensions, audio, and playback.
+10. When correcting one scene, replace only that scene and rerender.
