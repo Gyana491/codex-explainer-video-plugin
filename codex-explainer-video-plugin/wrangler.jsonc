@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "codex-explainer-media-mcp",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  "r2_buckets": [
+    {
+      "binding": "MEDIA_BUCKET",
+      "bucket_name": "codex-explainer-media"
+    }
+  ],
+  "vars": {
+    "PUBLIC_MEDIA_BASE_URL": "https://media.example.com",
+    "REPLICATE_MODEL": "juergengunz/real-esrgan-v2",
+    "OPENAI_TTS_MODEL": "gpt-4o-mini-tts"
+  }
+}

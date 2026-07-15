@@ -1,0 +1,17 @@
+{
+  "name": "local-explainer-plugins",
+  "plugins": [
+    {
+      "name": "explainer-video-studio",
+      "source": {
+        "source": "path",
+        "path": "../.."
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
