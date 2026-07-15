@@ -3,9 +3,7 @@
 	"name": "explainer-video-media-mcp",
 	"main": "src/index.ts",
 	"compatibility_date": "2026-07-15",
-	"compatibility_flags": [
-		"nodejs_compat"
-	],
+	"compatibility_flags": ["nodejs_compat"],
 	"observability": {
 		"enabled": true,
 	},
@@ -18,7 +16,6 @@
 	],
 	"vars": {
 		"OPENAI_TTS_MODEL": "gpt-4o-mini-tts",
-		"REPLICATE_MODEL_VERSION": "replace-with-your-model-version-id",
 		"PUBLIC_MEDIA_BASE_URL": "https://pub-b1ee8a9e066842e1a5f85f976def0852.r2.dev",
 	},
 }

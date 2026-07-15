@@ -2,12 +2,18 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { saveToR2 } from "../storage";
 
+const REPLICATE_MODEL = "juergengunz/real-esrgan-v2";
+
 type Prediction = {
 	id: string;
 	status: "starting" | "processing" | "succeeded" | "failed" | "canceled";
 	output?: string | string[] | null;
 	error?: string | null;
 	urls?: { get?: string };
+};
+
+type ReplicateModel = {
+	latest_version?: { id?: string } | null;
 };
 
 export function registerUpscaleImage(server: McpServer, env: Env): void {
@@ -79,6 +85,7 @@ async function createPrediction(
 	scale: number,
 	faceEnhance: boolean,
 ): Promise<Prediction> {
+	const version = await getLatestModelVersion(env);
 	const response = await fetch("https://api.replicate.com/v1/predictions", {
 		method: "POST",
 		headers: {
@@ -87,7 +94,7 @@ async function createPrediction(
 			Prefer: "wait=60",
 		},
 		body: JSON.stringify({
-			version: env.REPLICATE_MODEL_VERSION,
+			version,
 			input: { image: imageUrl, scale, face_enhance: faceEnhance },
 		}),
 	});
@@ -97,6 +104,24 @@ async function createPrediction(
 	}
 
 	return response.json<Prediction>();
+}
+
+async function getLatestModelVersion(env: Env): Promise<string> {
+	const response = await fetch(`https://api.replicate.com/v1/models/${REPLICATE_MODEL}`, {
+		headers: { Authorization: `Bearer ${env.REPLICATE_API_TOKEN}` },
+	});
+
+	if (!response.ok) {
+		throw new Error(`Could not resolve the Replicate model (HTTP ${response.status}).`);
+	}
+
+	const model = await response.json<ReplicateModel>();
+	const version = model.latest_version?.id;
+	if (!version) {
+		throw new Error("Replicate did not return a latest model version.");
+	}
+
+	return version;
 }
 
 async function waitForPrediction(env: Env, initial: Prediction): Promise<Prediction> {
