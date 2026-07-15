@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "explainer-media": {
+    "codex-explainer-video-plugin": {
       "type": "http",
       "url": "https://explainer-video-media-mcp.gyan491.workers.dev/mcp"
     }
