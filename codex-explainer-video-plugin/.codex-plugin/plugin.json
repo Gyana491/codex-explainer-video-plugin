@@ -1,6 +1,6 @@
 {
   "name": "explainer-video-studio",
-  "version": "0.1.1",
+  "version": "0.1.1+codex.20260715195920",
   "description": "Create storyboard-based explainer videos using Codex image generation, Real-ESRGAN upscaling, OpenAI voiceover, and local FFmpeg composition.",
   "author": {
     "name": "Gyana Ranjan Mohanta"
@@ -19,10 +19,13 @@
   "interface": {
     "displayName": "Explainer Video Studio",
     "shortDescription": "Generate complete storyboard explainer videos",
-    "longDescription": "Uses Codex's built-in image generation for visual assets, the authenticated Explainer Media MCP server for Real-ESRGAN upscaling and OpenAI TTS, and FFmpeg in the project workspace for scene splitting and final rendering.",
+    "longDescription": "Uses Codex's built-in image generation for visual assets, the Explainer Media MCP server for Real-ESRGAN upscaling and OpenAI TTS, and FFmpeg in the project workspace for scene splitting and final rendering.",
     "developerName": "Gyana Ranjan Mohanta",
     "category": "Productivity",
-    "capabilities": ["Read", "Write"],
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
     "defaultPrompt": [
       "Create a 40-second explainer video from this topic.",
       "Turn this script into a storyboard video with voiceover.",

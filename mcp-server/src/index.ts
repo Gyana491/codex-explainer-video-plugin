@@ -15,39 +15,6 @@ function createServer(env: Env): McpServer {
 	return server;
 }
 
-function unauthorized(): Response {
-	return Response.json(
-		{
-			error: "Unauthorized",
-			message: "Provide a valid bearer token.",
-		},
-		{
-			status: 401,
-			headers: { "WWW-Authenticate": "Bearer" },
-		},
-	);
-}
-
-function serverAuthMisconfigured(): Response {
-	return Response.json(
-		{ error: "Server authentication is not configured" },
-		{ status: 500 },
-	);
-}
-
-function authorizeRequest(request: Request, env: Env): Response | null {
-	if (!env.MCP_API_KEY) return serverAuthMisconfigured();
-
-	const authorization = request.headers.get("Authorization");
-	if (!authorization?.startsWith("Bearer ")) return unauthorized();
-
-	const provided = new TextEncoder().encode(authorization.slice(7));
-	const expected = new TextEncoder().encode(env.MCP_API_KEY);
-	if (provided.byteLength !== expected.byteLength) return unauthorized();
-
-	return crypto.subtle.timingSafeEqual(provided, expected) ? null : unauthorized();
-}
-
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 		const url = new URL(request.url);
@@ -61,8 +28,6 @@ export default {
 		}
 
 		if (url.pathname === "/mcp") {
-			const denied = authorizeRequest(request, env);
-			if (denied) return denied;
 			return createMcpHandler(createServer(env))(request, env, ctx);
 		}
 

@@ -19,7 +19,6 @@ Produce the finished video in the user's current project workspace.
 ## Explainer Media MCP contract
 
 - Use only the configured `explainer-media` server at the plugin-provided endpoint.
-- Treat an authentication error as a missing or incorrect installation key. Stop and ask the user to reinstall or reconfigure the plugin with `EXPLAINER_MCP_API_KEY`; never request or print the key in chat.
 - Read `upscaledImageUrl` from a successful `upscale_image` result.
 - Read `voiceoverUrl` from a successful `generate_voiceover` result.
 - Treat `isError: true` or `success: false` as a failed generation. Report the returned error and preserve completed assets.

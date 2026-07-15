@@ -8,7 +8,6 @@ interface __BaseEnv_Env {
 	PUBLIC_MEDIA_BASE_URL: "https://pub-b1ee8a9e066842e1a5f85f976def0852.r2.dev";
 	OPENAI_API_KEY: string;
 	REPLICATE_API_TOKEN: string;
-	MCP_API_KEY: string;
 }
 declare namespace Cloudflare {
 	interface GlobalProps {
@@ -21,7 +20,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "OPENAI_TTS_MODEL" | "REPLICATE_MODEL_VERSION" | "PUBLIC_MEDIA_BASE_URL" | "OPENAI_API_KEY" | "REPLICATE_API_TOKEN" | "MCP_API_KEY">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "OPENAI_TTS_MODEL" | "REPLICATE_MODEL_VERSION" | "PUBLIC_MEDIA_BASE_URL" | "OPENAI_API_KEY" | "REPLICATE_API_TOKEN">> {}
 }
 
 // Begin runtime types

@@ -57,7 +57,6 @@ Storyboard creation, scene planning, image generation, cropping, and video rende
 │   ├── index.ts
 │   ├── types.ts
 │   ├── lib/
-│   │   ├── auth.ts
 │   │   └── http.ts
 │   ├── services/
 │   │   ├── openai.ts
@@ -85,7 +84,6 @@ Fill in:
 ```env
 OPENAI_API_KEY=...
 REPLICATE_API_TOKEN=...
-MCP_API_KEY=...
 ```
 
 ## 2. Create the R2 bucket
@@ -128,11 +126,7 @@ Test with MCP Inspector:
 npx @modelcontextprotocol/inspector@latest
 ```
 
-Connect to `http://localhost:8787/mcp` and provide:
-
-```text
-Authorization: Bearer <MCP_API_KEY>
-```
+Connect to `http://localhost:8787/mcp`; no authorization header is required.
 
 ## 4. Deploy to Cloudflare
 
@@ -141,7 +135,6 @@ Store secrets:
 ```bash
 pnpm wrangler secret put OPENAI_API_KEY
 pnpm wrangler secret put REPLICATE_API_TOKEN
-pnpm wrangler secret put MCP_API_KEY
 ```
 
 Deploy:
@@ -156,23 +149,14 @@ The production endpoint is:
 https://explainer-video-media-mcp.gyan491.workers.dev/mcp
 ```
 
-## 5. Configure the plugin MCP token
+## 5. Plugin MCP configuration
 
-The plugin marketplace uses `policy.authentication: "ON_INSTALL"`, so installation in the Codex app asks for the MCP bearer key. Enter the same secret stored in the Worker as `MCP_API_KEY`. Codex stores it for the plugin as `EXPLAINER_MCP_API_KEY`, the environment variable referenced by `.mcp.json`.
-
-For command-line development, set the same environment variable manually:
-
-```bash
-export EXPLAINER_MCP_API_KEY="<same value as MCP_API_KEY>"
-```
-
-The supplied `.mcp.json` uses:
+The MCP endpoint is configured without client authentication:
 
 ```json
 {
-  "url": "https://...workers.dev/mcp",
-  "transport": "streamable_http",
-  "bearer_token_env_var": "EXPLAINER_MCP_API_KEY"
+  "type": "http",
+  "url": "https://...workers.dev/mcp"
 }
 ```
 
@@ -184,7 +168,7 @@ This repository includes a local marketplace file under:
 .agents/plugins/marketplace.json
 ```
 
-Add `codex-explainer-video-plugin` as a local marketplace, then open Plugins and install **Explainer Video Studio**. Codex app installation should request the Explainer MCP API key before enabling the plugin. The CLI installer does not provide the same credential form, so CLI users must set `EXPLAINER_MCP_API_KEY` in their environment.
+Add `codex-explainer-video-plugin` as a local marketplace, then open Plugins and install **Explainer Video Studio**. No MCP credential is required.
 
 During development, the built-in `$plugin-creator` can also scaffold or refresh the local marketplace registration.
 
@@ -216,9 +200,8 @@ Its input names can change if the model owner publishes a new schema. Confirm th
 
 ## Security
 
-The example uses a shared bearer token because it is simple and suitable for private development. Before publishing broadly:
+The MCP endpoint is public and its tools can incur OpenAI and Replicate costs. Before publishing broadly:
 
-- replace shared-token access with OAuth,
 - add per-user quotas,
 - rate-limit costly tools,
 - validate allowed source-image hosts,

@@ -2,8 +2,7 @@
   "mcpServers": {
     "explainer-media": {
       "type": "http",
-      "url": "https://explainer-video-media-mcp.gyan491.workers.dev/mcp",
-      "bearer_token_env_var": "EXPLAINER_MCP_API_KEY"
+      "url": "https://explainer-video-media-mcp.gyan491.workers.dev/mcp"
     }
   }
 }

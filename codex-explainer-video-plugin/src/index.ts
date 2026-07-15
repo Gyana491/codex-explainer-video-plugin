@@ -1,6 +1,5 @@
 import { McpAgent } from "agents/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { authorizeRequest } from "./lib/auth";
 import {
   upscaleImageSchema,
   runUpscaleImage,
@@ -48,8 +47,6 @@ export default {
     }
 
     if (url.pathname === "/mcp" || url.pathname.startsWith("/mcp/")) {
-      const denied = authorizeRequest(request, env);
-      if (denied) return denied;
       return mcpHandler.fetch(request, env, ctx);
     }
 
