@@ -5,6 +5,8 @@ description: Take an existing storyboard image and narration, upscale it, split 
 
 # Render storyboard video
 
+Use the configured `explainer-media` MCP server. Read `upscaledImageUrl` from `upscale_image` and `voiceoverUrl` from `generate_voiceover`. On an authentication error, stop and ask the user to reinstall or reconfigure the plugin with `EXPLAINER_MCP_API_KEY`; never request or print the key in chat.
+
 1. Preserve the source image without filters.
 2. Call `explainer-media.upscale_image` unless the supplied image is already sufficiently large.
 3. Crop exact storyboard panels into individual scene files.

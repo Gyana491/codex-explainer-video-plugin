@@ -1,8 +1,8 @@
 {
-  "mcp_servers": {
+  "mcpServers": {
     "explainer-media": {
-      "url": "https://codex-explainer-media-mcp.YOUR_SUBDOMAIN.workers.dev/mcp",
-      "transport": "streamable_http",
+      "type": "http",
+      "url": "https://explainer-video-media-mcp.gyan491.workers.dev/mcp",
       "bearer_token_env_var": "EXPLAINER_MCP_API_KEY"
     }
   }

@@ -16,6 +16,14 @@ Produce the finished video in the user's current project workspace.
 - Use local code and FFmpeg for cropping, scene extraction, animation, audio mixing, subtitles, and rendering.
 - Do not restart the entire workflow when only one asset or scene needs correction.
 
+## Explainer Media MCP contract
+
+- Use only the configured `explainer-media` server at the plugin-provided endpoint.
+- Treat an authentication error as a missing or incorrect installation key. Stop and ask the user to reinstall or reconfigure the plugin with `EXPLAINER_MCP_API_KEY`; never request or print the key in chat.
+- Read `upscaledImageUrl` from a successful `upscale_image` result.
+- Read `voiceoverUrl` from a successful `generate_voiceover` result.
+- Treat `isError: true` or `success: false` as a failed generation. Report the returned error and preserve completed assets.
+
 ## Default workflow
 
 1. Inspect the request and choose:
@@ -43,7 +51,7 @@ Produce the finished video in the user's current project workspace.
    - Use `faceEnhance: false` for illustrations.
    - Use face enhancement only when faces are photorealistic and visibly important.
 
-5. Download the upscaled output into:
+5. Download the returned `upscaledImageUrl` into:
    `assets/storyboard/storyboard-upscaled.png`
 
 6. Split the storyboard into individual scenes.
@@ -59,7 +67,7 @@ Produce the finished video in the user's current project workspace.
    - Add delivery instructions matching the video tone.
    - Preserve the returned AI-generated voice disclosure in publishing notes.
 
-8. Download the voiceover to:
+8. Download the returned `voiceoverUrl` to:
    `assets/audio/voiceover.mp3`
 
 9. Build the video with FFmpeg.

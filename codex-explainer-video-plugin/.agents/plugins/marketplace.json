@@ -1,11 +1,14 @@
 {
   "name": "local-explainer-plugins",
+  "interface": {
+    "displayName": "Local Explainer Plugins"
+  },
   "plugins": [
     {
       "name": "explainer-video-studio",
       "source": {
-        "source": "path",
-        "path": "../.."
+        "source": "local",
+        "path": "./"
       },
       "policy": {
         "installation": "AVAILABLE",

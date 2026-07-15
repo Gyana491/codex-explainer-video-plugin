@@ -150,17 +150,17 @@ Deploy:
 pnpm deploy
 ```
 
-The production endpoint will look like:
+The production endpoint is:
 
 ```text
-https://codex-explainer-media-mcp.<account-subdomain>.workers.dev/mcp
+https://explainer-video-media-mcp.gyan491.workers.dev/mcp
 ```
-
-Update `.mcp.json` with the deployed URL.
 
 ## 5. Configure the plugin MCP token
 
-Set the environment variable used by `.mcp.json`:
+The plugin marketplace uses `policy.authentication: "ON_INSTALL"`, so installation in the Codex app asks for the MCP bearer key. Enter the same secret stored in the Worker as `MCP_API_KEY`. Codex stores it for the plugin as `EXPLAINER_MCP_API_KEY`, the environment variable referenced by `.mcp.json`.
+
+For command-line development, set the same environment variable manually:
 
 ```bash
 export EXPLAINER_MCP_API_KEY="<same value as MCP_API_KEY>"
@@ -184,7 +184,7 @@ This repository includes a local marketplace file under:
 .agents/plugins/marketplace.json
 ```
 
-Open the repository in Codex or the ChatGPT desktop app, open Plugins, find the local marketplace entry, and install **Explainer Video Studio**.
+Add `codex-explainer-video-plugin` as a local marketplace, then open Plugins and install **Explainer Video Studio**. Codex app installation should request the Explainer MCP API key before enabling the plugin. The CLI installer does not provide the same credential form, so CLI users must set `EXPLAINER_MCP_API_KEY` in their environment.
 
 During development, the built-in `$plugin-creator` can also scaffold or refresh the local marketplace registration.
 
