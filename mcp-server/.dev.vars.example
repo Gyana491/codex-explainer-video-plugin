@@ -1,0 +1,3 @@
+OPENAI_API_KEY=sk-your-openai-key
+REPLICATE_API_TOKEN=r8_your-replicate-token
+MCP_API_KEY=your-long-random-mcp-secret
