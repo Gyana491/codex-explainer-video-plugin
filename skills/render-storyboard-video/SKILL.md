@@ -7,10 +7,10 @@ description: Render or resynchronize an existing storyboard and narration, inclu
 
 Use the configured `explainer-media` MCP server. Read `upscaledImageUrl` from `upscale_image` and `voiceoverUrl` from `generate_voiceover`.
 
-1. Preserve the generated master storyboard without visual filters. Require exactly one exact-4:3 master with the declared proportional grid and exact-16:9 cells.
+1. Preserve the generated master storyboard without visual filters. Require exactly one exact-9:16 portrait master with the declared centered grid and exact-16:9 landscape panels.
 2. Upscale the master before splitting unless it is already sufficiently large. Pass an HTTP(S) URL or complete base64 data URI to `upscale_image`; never pass a local path, `file://` URL, blob URL, or bare base64.
 3. Split the storyboard before any generated voiceover work.
-   - Crop row-major panels into `assets/scenes/scene-01.png`, `scene-02.png`, and so on. Require every crop to satisfy `width * 9 = height * 16`; never stretch malformed artwork.
+   - Crop row-major panels into `assets/scenes/scene-01.png`, `scene-02.png`, and so on using each scene's recorded `crop_panel` pixel rectangle. Exclude outer padding and gutters. Require every crop to satisfy `width * 9 = height * 16`; never stretch malformed artwork.
    - Preserve the storyboard's declared narrative order. Verify the crop count, safe margins, unique compositions, one-idea clarity, causal beat progression, open-loop setup/payoff order, and visual callbacks before continuing.
 4. Finish every scene image before generated voiceover work.
    - Verify and correct exact structured handwritten text from `output/storyboard.json` using one typography system. Keep titles, labels, pointer lines, annotations, orange emphasis, whitespace, and caption-safe areas compliant.

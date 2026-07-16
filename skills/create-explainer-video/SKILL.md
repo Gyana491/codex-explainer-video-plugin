@@ -96,12 +96,12 @@ Produce the finished video in the user's current project workspace.
    - Write one master storyboard prompt containing every planned scene. Do not generate any voiceover yet.
 
 4. Generate exactly one master storyboard image with clearly separated scene panels.
-   - Require the single master image itself to be exact 4:3 landscape. Do not accept the image generator's closest alternative ratio.
+   - Require the single master image itself to be exact 9:16 portrait. Do not accept the image generator's closest alternative ratio.
    - Make every individual panel an exact 16:9 landscape frame, regardless of the final video's aspect ratio.
-   - Calculate `grid_scale = ceil(sqrt(scene_count / 12))`, `columns = 3 * grid_scale`, `rows = 4 * grid_scale`, and `cell_count = 12 * grid_scale^2`.
-   - This proportional grid keeps the master exact 4:3 and every equal cell exact 16:9 because `columns:rows = 3:4` and `(3 x 16):(4 x 9) = 4:3`.
+   - Choose rows and columns that maximize the size of equal 16:9 panels inside the exact 9:16 canvas. Evaluate candidate column counts from 1 through `scene_count`, use `rows = ceil(scene_count / columns)`, account for uniform gutters and outer padding, and select the largest valid panel size.
+   - Center the grid on the portrait canvas. Plain neutral outer space is allowed because the 9:16 master and its 16:9 panels have different orientations; never stretch panels to fill that space.
    - Put all scenes into this one grid in row-major order. Leave only trailing unused cells plain neutral; never create a second master image or let the model invent filler scenes.
-   - State the scene count, total cell count, row count, column count, and row-major reading order in the image-generation prompt.
+   - State the exact canvas dimensions, scene count, total cell count, row count, column count, panel dimensions, outer padding, gutters, and row-major reading order in the image-generation prompt.
    - Use identical panel dimensions, straight boundaries, and clear gutters so crops can be calculated deterministically.
    - Keep important subjects and action inside each panel's 16:9 safe area.
    - For vertical output, also keep important content safe for a centered 9:16 crop from each 16:9 panel.
@@ -114,19 +114,20 @@ Produce the finished video in the user's current project workspace.
    - Use visual hierarchy that reveals the idea within two seconds: title first, main visual path second, orange outcome or key phrase third, supporting notes last.
    - Use orange only for important words, arrows, outcomes, underlines, highlights, and occasional circles, boxes, or stars. Keep ordinary text black.
    - Ask image generation to include only the exact specified handwritten copy. After splitting, verify and deterministically correct or replace any malformed lettering so every final scene contains accurate text directly inside the composition.
-   - Request the highest available exact 4:3 resolution. Dense grids produce small panels, so always upscale the master before splitting it.
-   - Inspect the result before continuing. Reject and regenerate a master that is not exact 4:3 or contains a missing panel or an approximate, square, portrait, or mixed-ratio panel.
+   - Request the highest available exact 9:16 resolution. Dense grids produce small panels, so always upscale the master before splitting it.
+   - Inspect the result before continuing. Reject and regenerate a master that is not exact 9:16 or contains a missing panel or an approximate, square, portrait, stretched, or mixed-ratio panel.
 
    Use this prompt skeleton and append the numbered scene descriptions. Include the whiteboard-inspired block for the default style; replace only that block with an equally specific visual contract when the user explicitly requests another style.
 
    ```text
-   Create ONE master storyboard contact sheet as a single exact 4:3 landscape image containing ALL {SCENE_COUNT} scenes.
+   Create ONE master storyboard contact sheet as a single exact 9:16 portrait image containing ALL {SCENE_COUNT} scenes.
 
    HARD LAYOUT CONTRACT:
-   - Exactly {COLUMNS} columns by {ROWS} rows: {CELL_COUNT} equal cells total.
-   - Every cell is exact 16:9 landscape; the complete outer canvas is exact 4:3 landscape.
-   - Keep the grid proportional at 3k columns by 4k rows, where k={GRID_SCALE}; do not change its rows or columns.
-   - No square, portrait, merged, inset, overlapping, irregular, missing, or clipped cells.
+   - The complete outer canvas is exactly 9:16 portrait: {CANVAS_WIDTH}x{CANVAS_HEIGHT} pixels.
+   - Exactly {COLUMNS} columns by {ROWS} rows: {CELL_COUNT} equal panel positions total.
+   - Every panel is exactly 16:9 landscape at {PANEL_WIDTH}x{PANEL_HEIGHT} pixels and satisfies width x 9 = height x 16.
+   - Use {OUTER_PADDING}px outer padding and {GUTTER}px uniform gutters. Center the grid and leave any remaining canvas plain neutral.
+   - No square, portrait, merged, overlapping, stretched, irregular, missing, or clipped panels.
    - Show one composition per cell; never create collages or nested mini-panels inside a cell.
    - Use identical cell dimensions, straight aligned boundaries, and thin uniform divider strokes inside the cell edges.
    - Put all {SCENE_COUNT} scenes in cells 1-{SCENE_COUNT}, left-to-right then top-to-bottom.
@@ -173,7 +174,7 @@ Produce the finished video in the user's current project workspace.
    SLIDES IN ROW-MAJOR ORDER:
    {NUMBERED_SCENE_DESCRIPTIONS}
 
-   Final compliance check: exactly one 4:3 image; {COLUMNS}x{ROWS} equal grid; {CELL_COUNT} cells; all {SCENE_COUNT} requested scenes; every cell exact 16:9; all scenes fully inside the canvas; every slide communicates one idea within two seconds; every slide has exact handwritten text and a distinct uncrowded composition; the sequence follows one causal narrative spine, reaches a genuine turning point, pays off every open loop and visual callback, is understandable without narration, and feels like a professional hand-drawn presentation created by a skilled visual storyteller.
+   Final compliance check: exactly one 9:16 portrait image at {CANVAS_WIDTH}x{CANVAS_HEIGHT}; {COLUMNS}x{ROWS} equal grid; {CELL_COUNT} panel positions; all {SCENE_COUNT} requested scenes; every panel exact 16:9 at {PANEL_WIDTH}x{PANEL_HEIGHT}; all scenes fully inside the canvas; no crop includes padding or gutters; every slide communicates one idea within two seconds; every slide has exact handwritten text and a distinct uncrowded composition; the sequence follows one causal narrative spine, reaches a genuine turning point, pays off every open loop and visual callback, is understandable without narration, and feels like a professional hand-drawn presentation created by a skilled visual storyteller.
    ```
 
 5. Call `upscale_image` for the master storyboard.
@@ -188,7 +189,7 @@ Produce the finished video in the user's current project workspace.
    `assets/storyboard/storyboard-upscaled.png`
 
 7. Split the storyboard into individual scenes.
-   - Use exact equal grid coordinates based on the declared proportional grid and row-major order.
+   - Use the exact recorded `crop_panel` pixel rectangle for each scene based on the declared centered grid and row-major order. Do not divide the full portrait canvas into equal cells because that would include outer padding or gutters.
    - Do not use OCR unless unavoidable.
    - Crop every scene to exact 16:9 dimensions and verify `width * 9 = height * 16` before rendering. A one-pixel rounding trim is allowed when the master dimensions are not evenly divisible by the grid size; never stretch.
    - Ignore the declared trailing unused cells and verify the number of exported scene files equals `scene_count`.
@@ -251,7 +252,7 @@ Produce the finished video in the user's current project workspace.
 12. Validate:
    - duration is 4-8 minutes unless the user explicitly requested a shorter video,
    - scene count is within the calculated 5-6-slides-per-minute range,
-   - exactly one master storyboard exists, is exact 4:3, and contains the calculated proportional grid,
+   - exactly one master storyboard exists, is exact 9:16 portrait, and contains the declared centered grid,
    - every extracted storyboard scene satisfies `width * 9 = height * 16`,
    - every scene fills the frame,
    - no panel borders remain,
@@ -303,14 +304,14 @@ Produce the finished video in the user's current project workspace.
 
 ## Storyboard sizing
 
-Choose slide count after the narration is final but before voiceover generation. Use the requested or planned speaking duration to calculate an inclusive range of `ceil(duration_seconds / 12)` through `floor(duration_seconds / 10)`, then choose a count inside it based on meaningful visual ideas. This yields a planned cadence of 5-6 slides per minute, or 10-12 seconds per slide on average. Generate and split the storyboard first. Afterward, generate one voiceover per scene and replace all estimated timing with cumulative measured clip durations. Give each slide 2-4 narration-triggered reveal beats, resolving their exact timestamps only after word alignment. Fit every slide into exactly one 4:3 master using a `3k`-column by `4k`-row grid, where `k = ceil(sqrt(scene_count / 12))`. Never exceed 8 minutes.
+Choose slide count after the narration is final but before voiceover generation. Use the requested or planned speaking duration to calculate an inclusive range of `ceil(duration_seconds / 12)` through `floor(duration_seconds / 10)`, then choose a count inside it based on meaningful visual ideas. This yields a planned cadence of 5-6 slides per minute, or 10-12 seconds per slide on average. Generate and split the storyboard first. Afterward, generate one voiceover per scene and replace all estimated timing with cumulative measured clip durations. Give each slide 2-4 narration-triggered reveal beats, resolving their exact timestamps only after word alignment. Fit every exact 16:9 slide into one exact 9:16 portrait master using a centered row-major grid with recorded crop rectangles. Never exceed 8 minutes.
 
 Examples:
 
-- 60 seconds: 5-6 slides; use one 3x4 master with 12 cells.
-- 240 seconds: 20-24 slides; use one 6x8 master with 48 cells.
-- 360 seconds: 30-36 slides; use one 6x8 master with 48 cells.
-- 480 seconds: 40-48 slides; use one 6x8 master with 48 cells.
+- 60 seconds: 5-6 slides; calculate the largest centered 16:9 panel grid inside one 9:16 master.
+- 240 seconds: 20-24 slides; calculate the largest centered 16:9 panel grid inside one 9:16 master.
+- 360 seconds: 30-36 slides; calculate the largest centered 16:9 panel grid inside one 9:16 master.
+- 480 seconds: 40-48 slides; calculate the largest centered 16:9 panel grid inside one 9:16 master.
 
 Suggested narrative progression:
 

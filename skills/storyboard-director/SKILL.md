@@ -122,12 +122,11 @@ Rules:
 - Ask image generation to include only the exact specified handwritten copy. After panel extraction, verify and deterministically correct or replace malformed lettering so every final slide contains accurate text directly inside the composition.
 - Define a `caption_safe_area` for every slide, normally near the title-safe lower edge and free of faces, essential diagram details, and small on-slide text.
 - Generate exactly one master storyboard containing every scene.
-- Calculate `grid_scale = ceil(sqrt(scene_count / 12))`, `columns = 3 * grid_scale`, `rows = 4 * grid_scale`, and `cell_count = 12 * grid_scale^2`.
-- Set `storyboard_grid.master_aspect_ratio` to `4:3` and `panel_aspect_ratio` to `16:9`. Include `grid_scale`, `rows`, `columns`, `scene_count`, `cell_count`, `unused_cell_count`, and `reading_order: row-major`.
-- Keep the grid proportional at `3k` columns by `4k` rows. This makes the single master exact 4:3 while keeping all equal cells exact 16:9 because `(3 x 16):(4 x 9) = 4:3`.
-- Put every scene in row-major order and leave only the trailing unused cells plain neutral.
+- Set `storyboard_grid.master_aspect_ratio` to `9:16` and `panel_aspect_ratio` to `16:9`. Include `canvas_width`, `canvas_height`, `rows`, `columns`, `scene_count`, `cell_count`, `unused_cell_count`, `outer_padding`, `gutter`, `panel_width`, `panel_height`, and `reading_order: row-major`.
+- Choose the row-major rows and columns that maximize the area of equal 16:9 panels inside the exact 9:16 portrait canvas. Evaluate candidate column counts from 1 through `scene_count`, set `rows = ceil(scene_count / columns)`, and choose the candidate with the largest panel size after outer padding and uniform gutters. Center the finished grid in the canvas; neutral outer space is allowed and must never be treated as part of a panel.
+- Put every scene in row-major order and leave only trailing unused grid positions plain neutral. Record an exact pixel `crop_panel` rectangle for every populated position; do not infer crops later from the full canvas bounds.
 - Require every scene panel inside the master storyboard to be an exact 16:9 landscape frame with identical dimensions, straight boundaries, and clear gutters. Do not accept approximate, square, portrait, or mixed-ratio panels.
-- Include one `master_prompt` that follows the contract below and substitutes exact values. Repeat the counts and ratios because panel geometry is a hard requirement, not an artistic suggestion.
+- Include one `master_prompt` that follows the contract below and substitutes exact values. Repeat the canvas ratio, panel ratio, counts, dimensions, padding, and gutters because panel geometry is a hard requirement, not an artistic suggestion.
 - Keep all important subjects and action inside each panel's 16:9 safe area.
 - Verify that each panel's pixel dimensions satisfy `width * 9 = height * 16`. Regenerate a malformed storyboard instead of stretching its panels.
 - Treat `aspect_ratio` as the final video ratio. When the final output is vertical, compose each 16:9 source panel so its important content also survives a centered 9:16 crop.
@@ -137,16 +136,17 @@ Rules:
 Use this structure, followed by the numbered scene descriptions. Include the whiteboard-inspired block for the default style; replace only that block with an equally specific visual contract when the user explicitly requests another style.
 
 ```text
-Create ONE master storyboard contact sheet as a single exact 4:3 landscape image containing ALL {SCENE_COUNT} scenes.
+Create ONE master storyboard contact sheet as a single exact 9:16 portrait image containing ALL {SCENE_COUNT} scenes.
 
 HARD LAYOUT CONTRACT:
-- Draw exactly {COLUMNS} columns by {ROWS} rows: {CELL_COUNT} equal cells total.
-- Every cell is an exact 16:9 landscape rectangle. No square, portrait, merged, inset, overlapping, or irregular cells.
-- The complete outer canvas is exact 4:3 landscape. Keep the grid at 3k columns by 4k rows, where k={GRID_SCALE}; do not change its rows or columns.
-- Use identical cell dimensions, perfectly straight aligned boundaries, and thin uniform divider strokes inside the cell edges.
+- The complete outer canvas is exactly 9:16 portrait: {CANVAS_WIDTH}x{CANVAS_HEIGHT} pixels.
+- Draw exactly {COLUMNS} columns by {ROWS} rows: {CELL_COUNT} equal panel positions total.
+- Every panel is an exact 16:9 landscape rectangle of {PANEL_WIDTH}x{PANEL_HEIGHT} pixels, satisfying width x 9 = height x 16. No square, portrait, merged, overlapping, stretched, or irregular panels.
+- Use {OUTER_PADDING}px outer padding and {GUTTER}px uniform gutters. Center the grid on the portrait canvas and leave any remaining outer canvas plain neutral.
+- Use identical panel dimensions, perfectly straight aligned boundaries, and thin uniform divider strokes inside the panel edges.
 - Place all {SCENE_COUNT} scenes in cells 1-{SCENE_COUNT}, read left-to-right and top-to-bottom.
 - Leave cells {FIRST_UNUSED}-{CELL_COUNT} plain neutral and empty. Do not invent extra scenes. [Omit this line when no cells are unused.]
-- Fit the complete grid inside the canvas. Nothing may extend beyond or be clipped by the outer image.
+- Fit the complete grid inside the 9:16 canvas. Nothing may extend beyond or be clipped by the outer image, and neutral padding must not be included in any scene crop.
 - Keep each scene visually self-contained and keep important subjects away from dividers.
 - Show one composition per cell. Do not subdivide a cell into a collage, comic strip, or nested mini-panels.
 
@@ -190,5 +190,5 @@ For every numbered slide description, specify: story role, story beat, cause fro
 SLIDES IN ROW-MAJOR ORDER:
 {NUMBERED_SCENE_DESCRIPTIONS}
 
-Final compliance check before output: exactly one 4:3 image; {COLUMNS}x{ROWS} equal grid; {CELL_COUNT} cells; all {SCENE_COUNT} scenes; every individual cell exact 16:9; all requested scenes visible inside the canvas; every slide communicates one idea within two seconds; every slide has exact handwritten text and a distinct uncrowded composition; the sequence follows one causal narrative spine, reaches a genuine turning point, pays off every open loop and callback, is understandable without narration, and feels like a professional hand-drawn presentation created by a skilled visual storyteller.
+Final compliance check before output: exactly one 9:16 portrait image at {CANVAS_WIDTH}x{CANVAS_HEIGHT}; {COLUMNS}x{ROWS} equal grid; {CELL_COUNT} panel positions; all {SCENE_COUNT} scenes; every individual panel exactly 16:9 at {PANEL_WIDTH}x{PANEL_HEIGHT}; all requested scenes visible inside the canvas; every recorded crop excludes padding and gutters; every slide communicates one idea within two seconds; every slide has exact handwritten text and a distinct uncrowded composition; the sequence follows one causal narrative spine, reaches a genuine turning point, pays off every open loop and callback, is understandable without narration, and feels like a professional hand-drawn presentation created by a skilled visual storyteller.
 ```
