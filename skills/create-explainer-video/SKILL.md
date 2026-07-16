@@ -56,38 +56,42 @@ Produce the finished video in the user's current project workspace.
 5. Derive the timed scene list from both the script and measured voiceover duration.
    - Split at meaningful visual or narrative beats and align boundaries with natural pauses in the voiceover.
    - Let the content determine scene boundaries, then enforce enough visual change to avoid a slide-deck feel.
-   - Aim for 10-12 seconds per scene. For 4-8 minute videos, require at least `ceil(duration_seconds / 15)` scenes and normally use `ceil(duration_seconds / 12)` through `ceil(duration_seconds / 10)` scenes.
-   - Do not leave a still panel on screen longer than 15 seconds unless the narration deliberately calls for a pause or close study.
+   - Target 10-12 scenes per minute, equivalent to an average of 5-6 seconds per scene.
+   - Calculate `minimum_scene_count = ceil(duration_seconds / 6)` and `maximum_scene_count = floor(duration_seconds / 5)`. Choose a count inside that inclusive range based on meaningful visual beats. If the range is empty for an unusually short clip, use one scene.
+   - Split or combine nearby beats until the calculated count is within range without dropping narration. Individual scenes may vary around 5-6 seconds to follow natural speech, but the whole video must maintain the requested average cadence.
+   - Avoid leaving an ordinary still panel on screen longer than 8 seconds unless the narration deliberately calls for a pause or close study.
    - Make adjacent scenes visibly different through action, camera scale, angle, environment, diagram state, or point of view. Avoid long runs of near-identical compositions.
-   - Use no more than 49 scenes in one master storyboard. If the script has more than 49 beats, combine closely related beats without omitting essential narration.
-   - Write the scene-count rationale, per-scene narration segments, exact start and end times, and framing notes.
-   - Write one master storyboard prompt using the derived scene count.
+   - Write the scene-count calculation and rationale, per-scene narration segments, exact start and end times, and framing notes.
+   - Write one master storyboard prompt containing every calculated scene.
 
-6. Generate one master storyboard image with clearly separated scene panels.
-   - Require the master image itself to be exact 16:9 landscape. Do not accept the image generator's closest alternative ratio.
+6. Generate exactly one master storyboard image with clearly separated scene panels.
+   - Require the single master image itself to be exact 4:3 landscape. Do not accept the image generator's closest alternative ratio.
    - Make every individual panel an exact 16:9 landscape frame, regardless of the final video's aspect ratio.
-   - Choose `grid_size = ceil(sqrt(scene_count))` and use exactly `grid_size` rows by `grid_size` columns. This square grid is mandatory: it is what lets an equal-cell grid be 16:9 both at the master-image level and at the individual-panel level.
-   - State the scene count, total cell count, row count, column count, and row-major reading order in the image-generation prompt. Put scenes first and leave only trailing unused cells plain neutral; never let the model invent filler scenes.
+   - Calculate `grid_scale = ceil(sqrt(scene_count / 12))`, `columns = 3 * grid_scale`, `rows = 4 * grid_scale`, and `cell_count = 12 * grid_scale^2`.
+   - This proportional grid keeps the master exact 4:3 and every equal cell exact 16:9 because `columns:rows = 3:4` and `(3 x 16):(4 x 9) = 4:3`.
+   - Put all scenes into this one grid in row-major order. Leave only trailing unused cells plain neutral; never create a second master image or let the model invent filler scenes.
+   - State the scene count, total cell count, row count, column count, and row-major reading order in the image-generation prompt.
    - Use identical panel dimensions, straight boundaries, and clear gutters so crops can be calculated deterministically.
    - Keep important subjects and action inside each panel's 16:9 safe area.
    - For vertical output, also keep important content safe for a centered 9:16 crop from each 16:9 panel.
    - Keep characters, palette, lighting, and art direction consistent.
    - Avoid text inside generated artwork unless the user specifically requests it.
-   - Request the highest available 16:9 resolution. Small panels are acceptable because the storyboard is upscaled before it is split.
-   - Inspect the result before continuing. Reject and regenerate any storyboard containing a missing panel or an approximate, square, portrait, or mixed-ratio panel.
+   - Request the highest available exact 4:3 resolution. Dense grids produce small panels, so always upscale the master before splitting it.
+   - Inspect the result before continuing. Reject and regenerate a master that is not exact 4:3 or contains a missing panel or an approximate, square, portrait, or mixed-ratio panel.
 
    Use this prompt skeleton and append the numbered scene descriptions:
 
    ```text
-   Create ONE master storyboard contact sheet as a single exact 16:9 landscape image.
+   Create ONE master storyboard contact sheet as a single exact 4:3 landscape image containing ALL {SCENE_COUNT} scenes.
 
    HARD LAYOUT CONTRACT:
-   - Exactly {G} columns by {G} rows: {CELL_COUNT} equal cells total.
-   - Every cell is exact 16:9 landscape; the complete outer canvas is also exact 16:9.
+   - Exactly {COLUMNS} columns by {ROWS} rows: {CELL_COUNT} equal cells total.
+   - Every cell is exact 16:9 landscape; the complete outer canvas is exact 4:3 landscape.
+   - Keep the grid proportional at 3k columns by 4k rows, where k={GRID_SCALE}; do not change its rows or columns.
    - No square, portrait, merged, inset, overlapping, irregular, missing, or clipped cells.
    - Show one composition per cell; never create collages or nested mini-panels inside a cell.
    - Use identical cell dimensions, straight aligned boundaries, and thin uniform divider strokes inside the cell edges.
-   - Put exactly {SCENE_COUNT} scenes in cells 1-{SCENE_COUNT}, left-to-right then top-to-bottom.
+   - Put all {SCENE_COUNT} scenes in cells 1-{SCENE_COUNT}, left-to-right then top-to-bottom.
    - Leave cells {FIRST_UNUSED}-{CELL_COUNT} plain neutral and empty; do not invent extra scenes. [Omit when none are unused.]
    - Keep every subject inside its own cell and away from dividers.
 
@@ -96,10 +100,10 @@ Produce the finished video in the user's current project workspace.
    SCENES IN ROW-MAJOR ORDER:
    {NUMBERED_SCENE_DESCRIPTIONS}
 
-   Final compliance check: one 16:9 image; {G}x{G} equal grid; {CELL_COUNT} cells; {SCENE_COUNT} requested scenes; every cell exact 16:9; all scenes fully inside the canvas.
+   Final compliance check: exactly one 4:3 image; {COLUMNS}x{ROWS} equal grid; {CELL_COUNT} cells; all {SCENE_COUNT} requested scenes; every cell exact 16:9; all scenes fully inside the canvas.
    ```
 
-7. Call `upscale_image`.
+7. Call `upscale_image` for the master storyboard.
    - Default to `scale: 10`.
    - Use `faceEnhance: false` for illustrations.
    - Use face enhancement only when faces are photorealistic and visibly important.
@@ -108,7 +112,7 @@ Produce the finished video in the user's current project workspace.
    `assets/storyboard/storyboard-upscaled.png`
 
 9. Split the storyboard into individual scenes.
-   - Use exact equal grid coordinates based on the declared square layout and row-major order.
+   - Use exact equal grid coordinates based on the declared proportional grid and row-major order.
    - Do not use OCR unless unavoidable.
    - Crop every scene to exact 16:9 dimensions and verify `width * 9 = height * 16` before rendering. A one-pixel rounding trim is allowed when the master dimensions are not evenly divisible by the grid size; never stretch.
    - Ignore the declared trailing unused cells and verify the number of exported scene files equals `scene_count`.
@@ -125,8 +129,8 @@ Produce the finished video in the user's current project workspace.
 
 11. Validate:
    - duration is 4-8 minutes unless the user explicitly requested a shorter video,
-   - scene count satisfies the 15-second maximum-static cadence and does not exceed 49,
-   - master storyboard is exact 16:9 and contains the declared square grid,
+   - scene count is within the calculated 10-12-scenes-per-minute range,
+   - exactly one master storyboard exists, is exact 4:3, and contains the calculated proportional grid,
    - every extracted storyboard scene satisfies `width * 9 = height * 16`,
    - every scene fills the frame,
    - no panel borders remain,
@@ -143,13 +147,14 @@ Produce the finished video in the user's current project workspace.
 
 ## Storyboard sizing
 
-Choose scene count only after the narration is final and voiceover duration is measured. Base scene boundaries on meaningful script beats and natural audio pauses, then enforce frequent visual change. Aim for 10-12 seconds per scene, allow at most 15 seconds for an ordinary still, and never exceed 49 scenes or 8 minutes.
+Choose scene count only after the narration is final and voiceover duration is measured. Calculate an inclusive range of `ceil(duration_seconds / 6)` through `floor(duration_seconds / 5)`, then choose a count inside it based on meaningful script beats and natural audio pauses. This yields 10-12 scenes per minute, or 5-6 seconds per scene on average. Fit every scene into exactly one 4:3 master using a `3k`-column by `4k`-row grid, where `k = ceil(sqrt(scene_count / 12))`. Never exceed 8 minutes.
 
 Examples:
 
-- 240 seconds: minimum 16, normally 20-24 scenes; use a 5x5 grid.
-- 360 seconds: minimum 24, normally 30-36 scenes; use a 6x6 grid.
-- 480 seconds: minimum 32, normally 40-48 scenes; use a 7x7 grid.
+- 60 seconds: 10-12 scenes; use one 3x4 master with 12 cells.
+- 240 seconds: 40-48 scenes; use one 6x8 master with 48 cells.
+- 360 seconds: 60-72 scenes; use one 9x12 master with 108 cells.
+- 480 seconds: 80-96 scenes; use one 9x12 master with 108 cells.
 
 Suggested narrative progression:
 
