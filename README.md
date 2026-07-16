@@ -6,6 +6,7 @@ Before installing the plugin, make sure you have:
 
 - Codex installed and available from your terminal.
 - FFmpeg installed and available as `ffmpeg` and `ffprobe`.
+- Python with `pydub` for narration rhythm analysis. Python 3.13+ also needs `audioop-lts`.
 - A Codex workspace where generated video files can be saved.
 
 Verify FFmpeg:
@@ -13,6 +14,7 @@ Verify FFmpeg:
 ```bash
 ffmpeg -version
 ffprobe -version
+python3 -m pip install -r requirements-audio.txt
 ```
 
 ## Install the plugin

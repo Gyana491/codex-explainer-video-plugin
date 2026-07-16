@@ -1,6 +1,6 @@
 ---
 name: storyboard-director
-description: Design the narration, timing, shot list, and master storyboard prompt for an explainer video before assets are generated. Use for storyboard planning or when a user wants scenes, visual prompts, and timing without immediately rendering the final video.
+description: Design narration, audio-derived timing, shot list, and a master storyboard prompt for an explainer video before assets are generated. Use for storyboard planning, voiceover-synchronized scene timestamps, or when a user wants scenes, visual prompts, and timing without immediately rendering the final video.
 ---
 
 # Storyboard director
@@ -18,6 +18,8 @@ Return or save structured JSON with:
 - narration_style
 - narration
 - voiceover_duration_seconds
+- timing_source
+- audio_analysis_file
 - scene_count_rationale
 - storyboard_grid
 - average_scene_duration_seconds
@@ -34,6 +36,7 @@ Each scene must include:
 - camera_motion
 - transition
 - crop_panel
+- timing_source
 
 Rules:
 
@@ -44,10 +47,11 @@ Rules:
 - Target 4-8 minutes (240-480 seconds). Use 4 minutes when the user gives no duration. Honor a shorter duration only when the user explicitly requests it; never exceed 8 minutes.
 - Use second-based scene timestamps for precise narration alignment and rendering, even when the overall duration is expressed in minutes.
 - Derive the scene count from the script's distinct visual beats and the supplied or measured voiceover duration, then check the visual cadence. Target 10-12 scenes per minute, equivalent to 5-6 seconds per scene on average. Avoid leaving an ordinary still panel on screen longer than 8 seconds unless the content deliberately needs a pause.
-- When voiceover audio is available, measure its actual duration and use it to set scene boundaries. Otherwise, estimate duration from the final narration and identify the value as an estimate.
+- When voiceover audio is available, analyze it with `pydub` silence/speech detection and verify duration with FFprobe. Prefer cumulative measured durations from one audio file per scene; otherwise snap monolithic-audio boundaries to natural pause midpoints. Never replace audio analysis with a fixed duration per image.
+- Set top-level `timing_source` to `per_scene_audio`, `monolithic_pause_analysis`, or `estimated`. Set every scene's `timing_source` too, and point `audio_analysis_file` to the JSON analysis artifact when audio exists.
 - Calculate `minimum_scene_count = ceil(duration_seconds / 6)` and `maximum_scene_count = floor(duration_seconds / 5)`. Choose a count inside that inclusive range based on meaningful beats; if the range is empty for an unusually short clip, use one scene. Split or combine nearby beats until the count is in range without dropping essential narration.
 - Record the formula, measured or estimated duration, calculated range, chosen scene count, achieved scenes per minute, and average scene duration in `scene_count_rationale`.
-- Keep scene timing aligned with natural speech.
+- Keep scene timing aligned with natural speech. Require contiguous timestamps starting at 0 and ending at the measured voiceover duration. Flag any pause-analysis boundary that falls back to a uniform cut for manual review.
 - Make adjacent scenes visibly different in at least one meaningful way: subject action, camera distance, camera angle, environment, diagram state, or point of view. Alternate establishing, medium, close-up, process, comparison, and consequence shots where appropriate; do not create a sequence of near-identical talking-head panels.
 - Maintain one consistent art direction across all panels.
 - Describe subjects, composition, background, lighting, and emotional purpose.
