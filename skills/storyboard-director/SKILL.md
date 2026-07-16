@@ -1,6 +1,6 @@
 ---
 name: storyboard-director
-description: Design narration, audio-derived timing, shot list, and a master storyboard prompt for an explainer video before assets are generated. Use for storyboard planning, voiceover-synchronized scene timestamps, or when a user wants scenes, visual prompts, and timing without immediately rendering the final video.
+description: Design narration, audio-derived timing, slide plan, and a master storyboard prompt for a story-driven explainer presentation, defaulting to a polished editorial whiteboard style. Use for storyboard planning, voiceover-synchronized slide timestamps, or when a user wants slides, visual prompts, and timing without immediately rendering the final video.
 ---
 
 # Storyboard director
@@ -23,6 +23,7 @@ Return or save structured JSON with:
 - scene_count_rationale
 - storyboard_grid
 - average_scene_duration_seconds
+- theme_bible
 - master_prompt
 - scenes
 
@@ -37,6 +38,11 @@ Each scene must include:
 - transition
 - crop_panel
 - timing_source
+- story_role
+- on_slide_text
+- character_action
+- layout
+- reveal_beats
 
 Rules:
 
@@ -46,16 +52,23 @@ Rules:
 - Remove filler, repetition, exaggerated claims, and unnecessary calls to action unless the user requests them.
 - Target 4-8 minutes (240-480 seconds). Use 4 minutes when the user gives no duration. Honor a shorter duration only when the user explicitly requests it; never exceed 8 minutes.
 - Use second-based scene timestamps for precise narration alignment and rendering, even when the overall duration is expressed in minutes.
-- Derive the scene count from the script's distinct visual beats and the supplied or measured voiceover duration, then check the visual cadence. Target 10-12 scenes per minute, equivalent to 5-6 seconds per scene on average. Avoid leaving an ordinary still panel on screen longer than 8 seconds unless the content deliberately needs a pause.
+- Treat every scene as one explainer-presentation slide and one chapter in a continuous story. Derive the slide count from meaningful narrative chapters and the supplied or measured voiceover duration. Target 2-3 slides per minute, equivalent to 20-30 seconds per slide on average.
 - When voiceover audio is available, analyze it with `pydub` silence/speech detection and verify duration with FFprobe. Prefer cumulative measured durations from one audio file per scene; otherwise snap monolithic-audio boundaries to natural pause midpoints. Never replace audio analysis with a fixed duration per image.
 - Set top-level `timing_source` to `per_scene_audio`, `monolithic_pause_analysis`, or `estimated`. Set every scene's `timing_source` too, and point `audio_analysis_file` to the JSON analysis artifact when audio exists.
-- Calculate `minimum_scene_count = ceil(duration_seconds / 6)` and `maximum_scene_count = floor(duration_seconds / 5)`. Choose a count inside that inclusive range based on meaningful beats; if the range is empty for an unusually short clip, use one scene. Split or combine nearby beats until the count is in range without dropping essential narration.
+- Calculate `minimum_scene_count = ceil(duration_seconds / 30)` and `maximum_scene_count = floor(duration_seconds / 20)`. Choose a count inside that inclusive range based on meaningful story chapters; if the range is empty for an unusually short clip, use one slide. Combine nearby beats until the count is in range without dropping essential narration.
 - Record the formula, measured or estimated duration, calculated range, chosen scene count, achieved scenes per minute, and average scene duration in `scene_count_rationale`.
 - Keep scene timing aligned with natural speech. Require contiguous timestamps starting at 0 and ending at the measured voiceover duration. Flag any pause-analysis boundary that falls back to a uniform cut for manual review.
-- Make adjacent scenes visibly different in at least one meaningful way: subject action, camera distance, camera angle, environment, diagram state, or point of view. Alternate establishing, medium, close-up, process, comparison, and consequence shots where appropriate; do not create a sequence of near-identical talking-head panels.
-- Maintain one consistent art direction across all panels.
+- Give every slide 2-4 internal `reveal_beats` tied to exact voiceover timestamps or trigger phrases. Each beat must specify the narration trigger, start time, and visual change, favoring progressive draw-on strokes, text, pink underlines, arrows, highlights, callouts, diagram states, character action, crop, or camera motion.
+- Do not leave the complete slide static for its full duration. A slide may run longer than 30 seconds only when its timed reveal beats create purposeful visual progression.
+- Make adjacent slides advance the story through a new question, consequence, insight, mechanism, proof point, or resolution while keeping a stable presentation design language.
+- Default to a polished editorial whiteboard style unless the user explicitly requests another visual direction.
+- Establish one top-level `theme_bible` for all panels: named recurring character designs and wardrobe, warm off-white paper, faint square grid, confident black hand-drawn outlines, restrained light-gray pencil hatching, one pink accent family, typography, generous spacing, rounded frames, geometric edge decorations, hand-drawn icons, and crisp pink offset shadows. Repeat the essential character and theme anchors in every slide description.
+- Use oversized black editorial display headlines, clean supporting labels, simple whiteboard metaphors, and one clear visual reading path. Keep pink for emphasis rather than body copy.
+- Avoid photorealism, 3D rendering, glossy UI, gradients, saturated extra colors, stock imagery, dense scenery, messy marker scribbles, comic panels, and heavy soft shadows.
 - Describe subjects, composition, background, lighting, and emotional purpose.
-- Do not put essential copy inside the generated image.
+- Make every final slide presentation-complete: concise headline, only the supporting copy needed for comprehension, at least one named recurring story character, and one explanatory visual such as a diagram, comparison, object, chart, or environment.
+- Keep `on_slide_text` concise and exact: prefer a headline of at most 7 words and no more than 20 additional words across labels, callouts, or supporting copy. Do not use the narration transcript as slide copy.
+- Reserve clean, high-contrast text zones in the generated art. Plan to add the exact copy as a deterministic post-generation overlay after panel extraction rather than relying on generated bitmap lettering.
 - Generate exactly one master storyboard containing every scene.
 - Calculate `grid_scale = ceil(sqrt(scene_count / 12))`, `columns = 3 * grid_scale`, `rows = 4 * grid_scale`, and `cell_count = 12 * grid_scale^2`.
 - Set `storyboard_grid.master_aspect_ratio` to `4:3` and `panel_aspect_ratio` to `16:9`. Include `grid_scale`, `rows`, `columns`, `scene_count`, `cell_count`, `unused_cell_count`, and `reading_order: row-major`.
@@ -69,7 +82,7 @@ Rules:
 
 ## Master storyboard prompt contract
 
-Use this structure, followed by the numbered scene descriptions:
+Use this structure, followed by the numbered scene descriptions. Include the editorial whiteboard block for the default style; replace only that block with an equally specific visual contract when the user explicitly requests another style.
 
 ```text
 Create ONE master storyboard contact sheet as a single exact 4:3 landscape image containing ALL {SCENE_COUNT} scenes.
@@ -88,7 +101,25 @@ HARD LAYOUT CONTRACT:
 VISUAL CONTINUITY:
 {STYLE_AND_CONTINUITY_RULES}
 
-SCENES IN ROW-MAJOR ORDER:
+PRESENTATION STORYTELLING:
+- Treat every cell as one polished explainer-presentation slide and one chapter in a continuous story.
+- Every slide includes at least one named recurring story character and one explanatory visual.
+- Reserve clean, uncluttered, high-contrast zones for the exact headline and supporting copy specified in each scene. The exact text will be composited after extraction; do not invent words or render lettering in the base artwork.
+- Show the complete base composition; timed reveals, highlights, and camera moves will be added during video rendering.
+- Do not add panel numbers, logos, watermarks, or unspecified text.
+
+EDITORIAL WHITEBOARD VISUAL SYSTEM:
+- Use a warm off-white paper background with an extremely faint square grid.
+- Draw all characters, arrows, icons, diagrams, charts, and objects as clean black hand-sketched line art with confident outlines and restrained light-gray pencil hatching.
+- Limit the palette to black, white, pale gray, and one pink accent family. Use pink sparingly for emphasis, selected fills, marker strokes, and crisp offset shadows.
+- Use generous negative space, an oversized headline zone, rounded rectangular content frames, cropped geometric decorations at selected edges, and a clear visual reading path.
+- Keep every named character identical across slides in face, hair, clothing, body proportions, and drawing style.
+- Use simple whiteboard metaphors and topic-specific diagrams instead of realistic environments.
+- No photorealism, 3D, glossy UI, gradients, saturated extra colors, stock imagery, dense scenery, messy marker scribbles, comic panels, or heavy soft shadows.
+
+For every numbered slide description, specify: story role, voiceover idea, named character and action, base composition, explanatory visual, reserved text-zone layout, exact on-slide copy for later overlay, and planned reveal beats. Reveal beats describe later animation and must not create nested panels in the base image.
+
+SLIDES IN ROW-MAJOR ORDER:
 {NUMBERED_SCENE_DESCRIPTIONS}
 
 Final compliance check before output: exactly one 4:3 image; {COLUMNS}x{ROWS} equal grid; {CELL_COUNT} cells; all {SCENE_COUNT} scenes; every individual cell exact 16:9; all requested scenes visible inside the canvas.

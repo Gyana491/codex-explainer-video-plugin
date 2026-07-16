@@ -49,7 +49,7 @@ Confirm that `codex-explainer-video-plugin` appears in the installed plugin list
 In a new Codex task, try:
 
 ```text
-Create a 4-minute explainer video about how solar panels work. Calculate 10-12 scenes per minute and arrange every exact 16:9 scene panel inside one exact 4:3 master storyboard using the calculated proportional grid.
+Create a 4-minute, story-driven whiteboard explainer presentation about how solar panels work. Use 2-3 slides per minute. Keep a consistent editorial whiteboard theme: warm off-white grid paper, confident black hand-drawn outlines, light-gray pencil hatching, sparse pink accents, rounded content frames, oversized headlines, simple diagrams, and one recurring guide character. Include concise on-slide text and synchronize 2-4 progressive draw-on reveal beats within each slide to the voiceover. Arrange every exact 16:9 slide panel inside one exact 4:3 master storyboard using the calculated proportional grid.
 ```
 
 ## Reinstall or update
