@@ -104,6 +104,9 @@ Produce the finished video in the user's current project workspace.
    ```
 
 7. Call `upscale_image` for the master storyboard.
+   - Pass the image generator's returned `image_url` as `imageUrl`.
+   - `imageUrl` accepts either an HTTP(S) URL or a complete base64 data URI such as `data:image/png;base64,...`.
+   - Never pass a local filesystem path, `file://` URL, blob URL, or only the raw base64 payload. If the generated result is available only as a local file, read its MIME type and encode the complete file as a data URI before calling the tool.
    - Default to `scale: 10`.
    - Use `faceEnhance: false` for illustrations.
    - Use face enhancement only when faces are photorealistic and visibly important.

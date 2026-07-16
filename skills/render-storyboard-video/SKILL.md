@@ -8,7 +8,7 @@ description: Take an existing storyboard image and narration, upscale it, split 
 Use the configured `explainer-media` MCP server. Read `upscaledImageUrl` from `upscale_image` and `voiceoverUrl` from `generate_voiceover`.
 
 1. Preserve the source image without filters.
-2. Call `explainer-media.upscale_image` unless the supplied image is already sufficiently large.
+2. Call `explainer-media.upscale_image` unless the supplied image is already sufficiently large. Pass an HTTP(S) URL or a complete base64 data URI (`data:image/png;base64,...`) as `imageUrl`; never pass a local path, `file://` URL, blob URL, or bare base64. Convert local image bytes to a complete data URI first.
 3. Call `explainer-media.generate_voiceover` when no narration audio is supplied, then measure the actual audio duration with `ffprobe`.
 4. Derive scene timing from the script's visual beats and measured voiceover duration. Calculate an inclusive target of `ceil(duration_seconds / 6)` through `floor(duration_seconds / 5)` scenes, choose a count within it, and record the calculation. This produces 10-12 scenes per minute, or 5-6 seconds per scene on average. Avoid leaving an ordinary still panel longer than 8 seconds unless deliberately required.
 5. Require exactly one master storyboard containing every scene. It must be exact 4:3 and use a proportional equal-cell grid calculated with `k = ceil(sqrt(scene_count / 12))`, `columns = 3k`, and `rows = 4k`. Every cell must be exact 16:9. Use row-major scene order and ignore only declared trailing unused cells.

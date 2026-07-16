@@ -5,14 +5,18 @@ import { saveToR2 } from "../storage";
 
 const REPLICATE_MODEL = "nightmareai/real-esrgan";
 
+const imageInputSchema = z.string().min(1).refine(isSupportedImageInput, {
+	message: "Expected an HTTP(S) image URL or a base64 data URI such as data:image/png;base64,...",
+});
+
 export function registerUpscaleImage(server: McpServer, env: Env): void {
 	server.registerTool(
 		"upscale_image",
 		{
 			description:
-				"Upscale an existing storyboard or scene image with Real-ESRGAN. Keep faceEnhance false for illustrations and storyboards. The result is saved to R2.",
+				"Upscale an existing storyboard or scene image with Real-ESRGAN. imageUrl accepts an HTTP(S) URL or a base64 image data URI. Keep faceEnhance false for illustrations and storyboards. The result is saved to R2.",
 			inputSchema: {
-				imageUrl: z.string().url(),
+				imageUrl: imageInputSchema,
 				scale: z.number().min(2).max(10).default(10),
 				faceEnhance: z.boolean().default(false),
 				filename: z.string().max(100).optional(),
@@ -21,12 +25,13 @@ export function registerUpscaleImage(server: McpServer, env: Env): void {
 		async ({ imageUrl, scale, faceEnhance, filename }) => {
 			try {
 				const replicate = new Replicate({ auth: env.REPLICATE_API_TOKEN });
+				const image = toReplicateImageInput(imageUrl);
 				let predictionId: string | undefined;
 				const output = await replicate.run(
 					REPLICATE_MODEL,
 					{
 						input: {
-							image: imageUrl,
+							image,
 							scale,
 							face_enhance: faceEnhance,
 						},
@@ -56,7 +61,8 @@ export function registerUpscaleImage(server: McpServer, env: Env): void {
 
 				return jsonResult({
 					success: true,
-					sourceImageUrl: imageUrl,
+					...(isImageDataUri(imageUrl) ? {} : { sourceImageUrl: imageUrl }),
+					sourceImageType: isImageDataUri(imageUrl) ? "data-uri" : "url",
 					upscaledImageUrl: asset.url,
 					key: asset.key,
 					predictionId,
@@ -68,6 +74,37 @@ export function registerUpscaleImage(server: McpServer, env: Env): void {
 			}
 		},
 	);
+}
+
+function isSupportedImageInput(value: string): boolean {
+	if (isImageDataUri(value)) {
+		const base64 = value.slice(value.indexOf(",") + 1);
+		return (
+			base64.length > 0 && base64.length % 4 === 0 && /^[A-Za-z0-9+/]+={0,2}$/.test(base64)
+		);
+	}
+
+	try {
+		const url = new URL(value);
+		return url.protocol === "http:" || url.protocol === "https:";
+	} catch {
+		return false;
+	}
+}
+
+function isImageDataUri(value: string): boolean {
+	return /^data:image\/(?:png|jpeg|webp);base64,/i.test(value);
+}
+
+function toReplicateImageInput(value: string): string | Blob {
+	if (!isImageDataUri(value)) return value;
+
+	const commaIndex = value.indexOf(",");
+	const contentType = value.slice(5, value.indexOf(";"));
+	const binary = atob(value.slice(commaIndex + 1));
+	const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+
+	return new Blob([bytes], { type: contentType });
 }
 
 function getFileOutput(output: object): FileOutput {
