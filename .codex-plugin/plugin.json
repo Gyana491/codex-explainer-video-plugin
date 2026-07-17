@@ -20,8 +20,8 @@
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Codex Explainer Video Plugin",
-    "shortDescription": "Generate explainer videos with animated shapes and text",
-    "longDescription": "Uses Codex's built-in image generation for storyboard artwork, the Explainer Media MCP server for Real-ESRGAN upscaling and OpenAI TTS, Remotion for editable shape animation and essential text, and FFmpeg for final delivery.",
+    "shortDescription": "Generate story-driven explainers with animated overlays",
+    "longDescription": "Creates pixel-verified 4:3 master storyboards with exact 16:9 scenes, then combines locked OpenAI voiceover, word-focused captions, editable Remotion shape and text overlays, and FFmpeg delivery.",
     "developerName": "Gyana Ranjan Mohanta",
     "category": "Productivity",
     "capabilities": [
@@ -29,9 +29,9 @@
       "Write"
     ],
     "defaultPrompt": [
-      "Create a 40-second explainer video from this topic.",
-      "Turn this script into a storyboard video with voiceover.",
-      "Generate an explainer video using a single storyboard image.",
+      "Create a 4-minute explainer video from this topic with frequent visual changes.",
+      "Turn this script into a 4-8 minute storyboard video with voiceover.",
+      "Generate one pixel-verified 4:3 landscape master storyboard whose populated and blank slots are deterministically enforced as exact 16:9 landscape frames.",
       "Explain this topic with animated diagrams and only necessary on-screen text."
     ],
     "brandColor": "#111827"

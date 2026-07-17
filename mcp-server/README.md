@@ -2,7 +2,7 @@
 
 A small, stateless Cloudflare MCP server with two tools:
 
-- `upscale_image` upscales an existing image with Replicate and stores it in R2.
+- `upscale_image` accepts an HTTP(S) image URL or a base64 image data URI, upscales it with Replicate, and stores it in R2.
 - `generate_voiceover` creates narration with OpenAI TTS and stores it in R2.
 
 ## Local setup

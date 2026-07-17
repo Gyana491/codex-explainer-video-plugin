@@ -1,6 +1,6 @@
 ---
 name: render-storyboard-video
-description: Take an existing storyboard image and narration, upscale and split it, create or attach OpenAI voiceover, add deterministic Remotion shape animation and essential text, and render a final MP4. Use when the storyboard already exists or only composition is needed.
+description: Render or resynchronize an existing storyboard and narration as a story-driven whiteboard presentation with pixel-verified scenes, one locked-voice clip per scene, word-focused captions, and deterministic Remotion shape and essential-text overlays. Use when a storyboard already exists, only composition is needed, or presentation visuals drift from the voiceover.
 ---
 
 # Render storyboard video
@@ -9,29 +9,47 @@ Use the configured `explainer-media` server. Read `upscaledImageUrl` from `upsca
 
 Read [the overlay contract](../../references/overlay-storyboard.md) when the storyboard package contains overlays.
 
-1. Preserve the source image without filters.
-2. Call `explainer-media.upscale_image` unless the source is already sufficiently large.
-3. Call `explainer-media.generate_voiceover` when no narration audio is supplied. Prefer `marin` or `cedar`, request MP3, download the result, and preserve the AI-voice disclosure.
-4. Measure the actual audio duration with `ffprobe`. If narration exceeds the tool's 4,096-character input limit, split only at paragraph boundaries, generate each part with the same voice and instructions, then concatenate the parts before timing scenes.
-5. Derive scene boundaries from narration beats, natural pauses, and measured duration. Do not impose a fixed scene count; use at most 24.
-6. Crop exact 16:9 storyboard panels. Verify `width * 9 = height * 16`; never stretch artwork.
-7. Decide per scene whether simple FFmpeg motion is sufficient:
+1. Never make an additional image-generation call. Use the single supplied/generated contact sheet only. If it has no passing `output/storyboard-geometry.json`, treat it as a draft and run the bundled local `scripts/canonicalize_storyboard.py` after extracting its scene candidates. Preserve its artwork without visual filters, and accept only the locally composited exact-4:3 landscape master with exact-16:9 landscape populated and blank slots.
+2. Upscale the master before splitting unless it is already sufficiently large. Pass an HTTP(S) URL or complete base64 data URI to `upscale_image`; never pass a local path, `file://` URL, blob URL, or bare base64.
+3. Split the storyboard before any generated voiceover work.
+   - Require the geometry manifest to prove master `width * 3 == height * 4` and every populated or unused slot `width * 9 == height * 16`. Any missing or false check blocks rendering.
+   - Crop row-major panels into `assets/scenes/scene-01.png`, `scene-02.png`, and so on using each scene's recorded `crop_panel` pixel rectangle. Exclude outer padding and gutters. Require every crop to satisfy the integer equality `width * 9 == height * 16` with zero tolerance; never stretch malformed artwork.
+   - Blank slots must be identical in size and border geometry to populated slots but must not be exported as scene files.
+   - Preserve the storyboard's declared narrative order. Verify the crop count, safe margins, unique compositions, one-idea clarity, causal beat progression, open-loop setup/payoff order, and visual callbacks before continuing.
+4. Finish every scene image before generated voiceover work.
+   - Verify and correct exact structured handwritten text from `output/storyboard.json` using one typography system. Keep titles, labels, pointer lines, annotations, orange emphasis, whitespace, and caption-safe areas compliant.
+   - Do not start voice generation until all scene images pass visual and text review.
+5. Generate one separate voiceover file per scene.
+   - Save one locked configuration to `output/voice-config.json`, then call `generate_voiceover` once per scene narration segment in image order using identical voice, model, format, language, delivery, speed, and pronunciation guidance.
+   - Save `assets/audio/scenes/scene-01.mp3`, `scene-02.mp3`, and so on. Require one matching audio file for every image. Retry only a failed scene with the locked configuration.
+   - If the user supplies narration audio, preserve it and document the exception; otherwise per-scene generation is mandatory.
+6. Measure and concatenate scene audio.
+   - Measure every clip with FFprobe and use its exact duration for the matching slide. Concatenate decoded clips in order with `pydub`, without gaps or overlaps, and save `assets/audio/voiceover.mp3`.
+   - Write cumulative measured boundaries to `output/scene-timings.json` with `timing_source: per_scene_audio`, then copy those exact timestamps into `output/storyboard.json`.
+   - Compare concatenated duration with the sum of scene durations and investigate a difference above 50 ms. Use bundled audio analysis for rhythm review only; never move a cut away from its clip boundary.
+7. Generate captions only after all scene voiceovers are final.
+   - Force-align each clip against its exact narration, offset local word timestamps by cumulative scene start, and merge them into `output/word-timings.json`. Never divide scene duration uniformly across words.
+   - Resolve storyboard reveal triggers from verified word timestamps. Group captions into 3-7-word phrases and write `output/captions.ass` with orange word-focused karaoke highlighting.
+8. Stitch the final video from `output/scene-timings.json`.
    - Use FFmpeg pans, zooms, and crossfades for `artwork-only` scenes.
-   - Use the bundled Remotion template for kinetic text, diagrams, charts, equations, or artwork with overlays.
-8. For hybrid rendering, copy `../../assets/remotion-overlay-template` into the user's workspace, replace `src/project.json`, place panels under `public/scenes`, and place voiceover under `public/audio`.
-9. Validate the project before installing dependencies or rendering:
+   - Use the bundled Remotion template for kinetic text, diagrams, charts, equations, or artwork with overlays. Copy `../../assets/remotion-overlay-template` into the writable project, replace `src/project.json`, place panels under `public/scenes`, and place the joined narration under `public/audio`.
+   - Keep exact titles, labels, numbers, equations, chart values, and factual relationships in deterministic overlays. Treat generated lettering as non-authoritative artwork.
+   - Give every overlay element and animation cue a stable ID, normalized geometry, a resolved timestamp, and deterministic scene-relative `startProgress`.
+   - Validate the project before rendering:
 
-   ```powershell
-   node ../../scripts/validate-overlay-storyboard.mjs <copied-template>/src/project.json
-   ```
+     ```powershell
+     node ../../scripts/validate-overlay-storyboard.mjs <copied-template>/src/project.json
+     ```
 
-10. In the copied template, run `npm install`, `npm run preflight`, `npm run type-check`, and `npm run render`. On Windows ARM64, use x64 Node under Windows emulation because Remotion does not publish a native ARM64 compositor. The render script normalizes the Remotion intermediate to H.264/AAC, limited-range `yuv420p`, and `+faststart`.
-11. Use an additional FFmpeg pass for subtitle burn-in or attachment and audio replacement or mixing when requested.
-12. Verify duration, dimensions, scene count, audio, overlay safe areas, unique scenes, and start-to-finish playback.
+   - In the copied template run `npm install`, `npm run preflight`, `npm run type-check`, and `npm run render`. On Windows ARM64, use x64 Node under Windows emulation because Remotion does not publish a native ARM64 compositor.
+   - Set every image duration from its matching measured audio clip. Keep narration untouched and execute reveal beats at aligned timestamps.
+   - Burn in the final captions, compensate for any `xfade` overlap, and ensure the last visual frame ends with the final audio sample.
+   - Export H.264 MP4 with AAC audio, `yuv420p`, and `+faststart`.
+9. Validate the exact production order: generate or receive draft, upscale draft, extract scene candidates, deterministically canonicalize and verify the master and all slots, finish scenes, generate per-scene voiceovers, measure and concatenate audio, generate captions, render overlays, stitch video. Also verify 5-6 slides per minute, one matching image/audio pair per scene, identical voice configuration, exact overlay text, orange-only emphasis, unique readable compositions, aligned captions and reveal beats, safe overlay geometry, and final video/audio duration difference of at most 50 ms. Confirm the story still preserves its audience proxy, goal, stakes, obstacle, turning point, payoff, emotional progression, open-loop closures, and purposeful visual callbacks after splitting and stitching.
+10. When correcting one slide or clip, replace only the affected asset, rebuild downstream timing or captions when necessary, and preserve all unaffected work.
 
 ## Text and timing rules
 
-- Keep essential text separate from optional subtitles.
-- Never display the entire narration as a permanent text band.
-- Use deterministic `startProgress` values for cue timing. A `triggerPhrase` documents intent and may support later word alignment, but rendering must not depend on ElevenLabs timestamps.
-- When correcting one scene, replace only its panel or overlay data and rerender; preserve all unaffected assets.
+- Keep essential text separate from optional subtitles; never display the full narration as a permanent text band.
+- Use verified word timings to resolve cues when available, but always store deterministic `startProgress` so rendering does not depend on an external timestamp service.
+- Keep overlay text concise—normally 1-6 words per element and no more than two simultaneous blocks excluding captions.
