@@ -6,6 +6,7 @@ Before installing the plugin, make sure you have:
 
 - Codex installed and available from your terminal.
 - FFmpeg installed and available as `ffmpeg` and `ffprobe`.
+- Node.js and npm for videos that use animated shapes or essential text overlays.
 - A Codex workspace where generated video files can be saved.
 
 Verify FFmpeg:
@@ -35,6 +36,10 @@ The first command removes an older marketplace registration. If Codex reports th
 4. Confirm that FFmpeg is available in the same environment where Codex is running.
 
 No local API keys or MCP server configuration are required for the published plugin.
+
+The plugin uses OpenAI voiceover through its bundled media service; it does not use ElevenLabs. Storyboard panels can be combined with editable Remotion overlays for diagrams, charts, equations, labels, counters, and kinetic text. FFmpeg remains the final media-processing layer.
+
+On Windows ARM64, run the bundled overlay template with x64 Node.js under Windows emulation because Remotion does not publish its native compositor for that architecture. The template preflight reports this clearly before rendering. Set `REMOTION_BROWSER_EXECUTABLE` to override browser discovery when a custom Chrome or Edge path is needed.
 
 ## Verify the installation
 

@@ -1,0 +1,10 @@
+node_modules/
+output/
+compound-interest-video/
+virality-explainer-video/
+assets/remotion-overlay-template/output/
+.tools/
+assets/remotion-overlay-template/public/scenes/*
+!assets/remotion-overlay-template/public/scenes/.gitkeep
+assets/remotion-overlay-template/public/audio/*
+!assets/remotion-overlay-template/public/audio/.gitkeep

@@ -1,0 +1,36 @@
+{
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "audioPath": "audio/voiceover.mp3",
+  "voiceoverDurationSeconds": 6,
+  "backgroundColor": "#0f172a",
+  "scenes": [
+    {
+      "id": "scene-01",
+      "durationSeconds": 6,
+      "backgroundImage": "scenes/scene-01.png",
+      "cameraMotion": "slow-zoom-in",
+      "overlay": {
+        "strategy": "diagram",
+        "essentialText": [
+          {"id": "input-label", "text": "Input", "role": "label", "x": 0.25, "y": 0.5, "align": "center"},
+          {"id": "output-label", "text": "Useful output", "role": "label", "x": 0.75, "y": 0.5, "align": "center"}
+        ],
+        "shapes": [
+          {"id": "input-node", "type": "circle", "x": 0.25, "y": 0.5, "width": 0.16, "height": 0.16, "fill": "#2563eb"},
+          {"id": "flow-arrow", "type": "arrow", "x": 0.36, "y": 0.5, "x2": 0.64, "y2": 0.5, "stroke": "#f8fafc", "strokeWidth": 8},
+          {"id": "output-node", "type": "rounded-rect", "x": 0.75, "y": 0.5, "width": 0.2, "height": 0.15, "fill": "#f97316"}
+        ],
+        "animationCues": [
+          {"action": "reveal", "target": "input-node", "startProgress": 0.05, "durationSeconds": 0.6, "easing": "spring"},
+          {"action": "reveal", "target": "input-label", "startProgress": 0.12, "durationSeconds": 0.4},
+          {"action": "draw", "target": "flow-arrow", "startProgress": 0.34, "durationSeconds": 0.8},
+          {"action": "reveal", "target": "output-node", "startProgress": 0.58, "durationSeconds": 0.6, "easing": "spring"},
+          {"action": "reveal", "target": "output-label", "startProgress": 0.66, "durationSeconds": 0.4}
+        ]
+      }
+    }
+  ]
+}
+
