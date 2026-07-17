@@ -85,7 +85,7 @@ Rules:
 - Run a story-integrity test: summarize the full arc in one sentence; confirm the opening question is answered; verify every open loop closes; and remove or rewrite any scene whose absence would not break the causal logic, necessary evidence, or emotional progression.
 - Target 4-8 minutes (240-480 seconds). Use 4 minutes when the user gives no duration. Honor a shorter duration only when the user explicitly requests it; never exceed 8 minutes.
 - Use second-based scene timestamps for precise narration alignment and rendering, even when the overall duration is expressed in minutes.
-- Set `production_sequence` to this exact order: `plan_storyboard`, `generate_master_storyboard`, `upscale_master`, `split_scenes`, `finish_scene_text`, `generate_per_scene_voiceovers`, `measure_and_concatenate_audio`, `generate_word_level_captions`, `stitch_video`.
+- Set `production_sequence` to this exact order: `plan_storyboard`, `generate_master_draft`, `upscale_master_draft`, `extract_scene_candidates`, `canonicalize_master_geometry`, `verify_master_and_scenes`, `finish_scene_text`, `generate_per_scene_voiceovers`, `measure_and_concatenate_audio`, `generate_word_level_captions`, `stitch_video`.
 - Treat every scene as one explainer-presentation slide and one visual idea in a continuous story. Derive the slide count from meaningful visual ideas and the supplied or measured voiceover duration. Target 5-6 slides per minute, equivalent to 10-12 seconds per slide on average.
 - Before audio generation, assign one complete narration segment to every planned slide, set `timing_source` to `estimated_pre_audio`, and keep exact scene and reveal timestamps provisional. Generate, upscale, split, and finish the storyboard before generating any voiceover.
 - After the scene images are final, generate exactly one voiceover file per scene in the same order using one locked voice, model, format, language, delivery, and pronunciation configuration. Save the configuration to `output/voice-config.json` and require matching zero-padded image and audio filenames.
@@ -122,13 +122,20 @@ Rules:
 - Ask image generation to include only the exact specified handwritten copy. After panel extraction, verify and deterministically correct or replace malformed lettering so every final slide contains accurate text directly inside the composition.
 - Define a `caption_safe_area` for every slide, normally near the title-safe lower edge and free of faces, essential diagram details, and small on-slide text.
 - Generate exactly one master storyboard containing every scene.
+- Permit exactly one built-in image-generation call for the entire storyboard. Put all scenes and the complete hard layout contract into that single prompt. Never make a second image-generation call to correct geometry, wording, composition, or missing content.
+- Treat the image generator's contact sheet as a draft only. Never accept, publish, split for final rendering, or call it the master merely because its borders look close to 16:9.
 - Set `storyboard_grid.master_aspect_ratio` to `9:16` and `panel_aspect_ratio` to `16:9`. Include `canvas_width`, `canvas_height`, `rows`, `columns`, `scene_count`, `cell_count`, `unused_cell_count`, `outer_padding`, `gutter`, `panel_width`, `panel_height`, and `reading_order: row-major`.
 - Choose the row-major rows and columns that maximize the area of equal 16:9 panels inside the exact 9:16 portrait canvas. Evaluate candidate column counts from 1 through `scene_count`, set `rows = ceil(scene_count / columns)`, and choose the candidate with the largest panel size after outer padding and uniform gutters. Center the finished grid in the canvas; neutral outer space is allowed and must never be treated as part of a panel.
 - Put every scene in row-major order and leave only trailing unused grid positions plain neutral. Record an exact pixel `crop_panel` rectangle for every populated position; do not infer crops later from the full canvas bounds.
 - Require every scene panel inside the master storyboard to be an exact 16:9 landscape frame with identical dimensions, straight boundaries, and clear gutters. Do not accept approximate, square, portrait, or mixed-ratio panels.
+- After upscaling the draft, extract each scene candidate, then run the bundled `scripts/canonicalize_storyboard.py` compositor. It must scale-to-cover and center-crop without stretching, rebuild the accepted master on an exact 9:16 pixel canvas, draw every populated and unused slot at one shared exact 16:9 pixel size, and write the authoritative geometry manifest.
+- The compositor's output is the only accepted master storyboard. Store its manifest as `output/storyboard-geometry.json` and copy every populated slot rectangle into the matching scene's `crop_panel` field.
+- Require hard integer checks, not visual judgment or rounded decimal ratios: master `width * 16 == height * 9`; every populated slot, every unused blank slot, and every exported scene `width * 9 == height * 16`. Any false check is a blocking failure.
+- Blank slots must have exactly the same `x/y/width/height` geometry and border treatment as populated slots. They contain no artwork or text and are never exported as scenes.
 - Include one `master_prompt` that follows the contract below and substitutes exact values. Repeat the canvas ratio, panel ratio, counts, dimensions, padding, and gutters because panel geometry is a hard requirement, not an artistic suggestion.
 - Keep all important subjects and action inside each panel's 16:9 safe area.
-- Verify that each panel's pixel dimensions satisfy `width * 9 = height * 16`. Regenerate a malformed storyboard instead of stretching its panels.
+- Verify that each accepted panel's pixel dimensions satisfy the exact integer equality `width * 9 == height * 16`, with no tolerance or rounding exception. Regenerate malformed artwork instead of stretching it or weakening the check.
+- Prevent crop loss in the one prompt by requiring generous internal safe margins around all text, characters, and diagrams. If local center-cropping is needed, use only the existing generated pixels; never request replacement artwork or a second generated image.
 - Treat `aspect_ratio` as the final video ratio. When the final output is vertical, compose each 16:9 source panel so its important content also survives a centered 9:16 crop.
 
 ## Master storyboard prompt contract
@@ -139,6 +146,7 @@ Use this structure, followed by the numbered scene descriptions. Include the whi
 Create ONE master storyboard contact sheet as a single exact 9:16 portrait image containing ALL {SCENE_COUNT} scenes.
 
 HARD LAYOUT CONTRACT:
+- ONE IMAGE-GENERATION ATTEMPT ONLY: render every requested scene correctly in this single output. Do not defer, omit, or propose a retry.
 - The complete outer canvas is exactly 9:16 portrait: {CANVAS_WIDTH}x{CANVAS_HEIGHT} pixels.
 - Draw exactly {COLUMNS} columns by {ROWS} rows: {CELL_COUNT} equal panel positions total.
 - Every panel is an exact 16:9 landscape rectangle of {PANEL_WIDTH}x{PANEL_HEIGHT} pixels, satisfying width x 9 = height x 16. No square, portrait, merged, overlapping, stretched, or irregular panels.
@@ -148,7 +156,9 @@ HARD LAYOUT CONTRACT:
 - Leave cells {FIRST_UNUSED}-{CELL_COUNT} plain neutral and empty. Do not invent extra scenes. [Omit this line when no cells are unused.]
 - Fit the complete grid inside the 9:16 canvas. Nothing may extend beyond or be clipped by the outer image, and neutral padding must not be included in any scene crop.
 - Keep each scene visually self-contained and keep important subjects away from dividers.
+- Keep every title, label, character, and diagram well inside its panel's inner safe margin so an exact 16:9 center crop cannot remove required content.
 - Show one composition per cell. Do not subdivide a cell into a collage, comic strip, or nested mini-panels.
+- This generated contact sheet is a visual draft. The production workflow will rebuild it with a deterministic pixel compositor; do not imply that visually approximate borders are final geometry.
 
 VISUAL CONTINUITY:
 {STYLE_AND_CONTINUITY_RULES}
