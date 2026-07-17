@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a pixel-exact 9:16 storyboard master from scene images.
+"""Build a pixel-exact 4:3 landscape storyboard master from scene images.
 
 Every populated and unused grid slot is exactly 16:9. Scene artwork is scaled
 to cover and center-cropped; it is never stretched. FFmpeg and FFprobe are the
@@ -105,8 +105,8 @@ def main() -> None:
     parser.add_argument("--scene-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--manifest", type=Path)
-    parser.add_argument("--canvas-width", type=int, default=1080)
-    parser.add_argument("--canvas-height", type=int, default=1920)
+    parser.add_argument("--canvas-width", type=int, default=1600)
+    parser.add_argument("--canvas-height", type=int, default=1200)
     parser.add_argument("--padding", type=int, default=24)
     parser.add_argument("--gutter", type=int, default=12)
     parser.add_argument("--background", default="F7F3E8")
@@ -116,8 +116,8 @@ def main() -> None:
 
     if shutil.which("ffmpeg") is None or shutil.which("ffprobe") is None:
         fail("ffmpeg and ffprobe must be installed")
-    if args.canvas_width * 16 != args.canvas_height * 9:
-        fail("master canvas must satisfy width * 16 = height * 9 (exact 9:16)")
+    if args.canvas_width * 3 != args.canvas_height * 4:
+        fail("master canvas must satisfy width * 3 = height * 4 (exact 4:3)")
     if min(args.padding, args.gutter, args.border_width) < 0:
         fail("padding, gutter, and border width cannot be negative")
     if not args.scene_dir.is_dir():
@@ -238,16 +238,16 @@ def main() -> None:
     master_width, master_height = image_size(args.output)
     if (master_width, master_height) != (args.canvas_width, args.canvas_height):
         fail("canonical master dimensions do not match the requested canvas")
-    if master_width * 16 != master_height * 9:
-        fail("canonical master failed exact 9:16 verification")
+    if master_width * 3 != master_height * 4:
+        fail("canonical master failed exact 4:3 verification")
 
     manifest = {
         "master": {
             "path": str(args.output),
             "width": master_width,
             "height": master_height,
-            "aspect_ratio": "9:16",
-            "ratio_verified": master_width * 16 == master_height * 9,
+            "aspect_ratio": "4:3",
+            "ratio_verified": master_width * 3 == master_height * 4,
         },
         "grid": {
             "columns": columns,

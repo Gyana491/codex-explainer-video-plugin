@@ -7,10 +7,10 @@ description: Render or resynchronize an existing storyboard and narration, inclu
 
 Use the configured `explainer-media` MCP server. Read `upscaledImageUrl` from `upscale_image` and `voiceoverUrl` from `generate_voiceover`.
 
-1. Never make an additional image-generation call. Use the single supplied/generated contact sheet only. If it has no passing `output/storyboard-geometry.json`, treat it as a draft and run the bundled local `scripts/canonicalize_storyboard.py` after extracting its scene candidates. Preserve its artwork without visual filters, and accept only the locally composited exact-9:16 portrait master with exact-16:9 landscape populated and blank slots.
+1. Never make an additional image-generation call. Use the single supplied/generated contact sheet only. If it has no passing `output/storyboard-geometry.json`, treat it as a draft and run the bundled local `scripts/canonicalize_storyboard.py` after extracting its scene candidates. Preserve its artwork without visual filters, and accept only the locally composited exact-4:3 landscape master with exact-16:9 landscape populated and blank slots.
 2. Upscale the master before splitting unless it is already sufficiently large. Pass an HTTP(S) URL or complete base64 data URI to `upscale_image`; never pass a local path, `file://` URL, blob URL, or bare base64.
 3. Split the storyboard before any generated voiceover work.
-   - Require the geometry manifest to prove master `width * 16 == height * 9` and every populated or unused slot `width * 9 == height * 16`. Any missing or false check blocks rendering.
+   - Require the geometry manifest to prove master `width * 3 == height * 4` and every populated or unused slot `width * 9 == height * 16`. Any missing or false check blocks rendering.
    - Crop row-major panels into `assets/scenes/scene-01.png`, `scene-02.png`, and so on using each scene's recorded `crop_panel` pixel rectangle. Exclude outer padding and gutters. Require every crop to satisfy the integer equality `width * 9 == height * 16` with zero tolerance; never stretch malformed artwork.
    - Blank slots must be identical in size and border geometry to populated slots but must not be exported as scene files.
    - Preserve the storyboard's declared narrative order. Verify the crop count, safe margins, unique compositions, one-idea clarity, causal beat progression, open-loop setup/payoff order, and visual callbacks before continuing.

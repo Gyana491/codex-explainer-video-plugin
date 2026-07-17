@@ -19,7 +19,7 @@
   "interface": {
     "displayName": "Codex Explainer Video Plugin",
     "shortDescription": "Generate dynamic 4-8 minute storyboard explainers",
-    "longDescription": "Creates pixel-verified 9:16 portrait master storyboards with deterministically composited, crop-ready 16:9 landscape scene and blank slots, then renders narration-timed scenes with OpenAI TTS and FFmpeg.",
+    "longDescription": "Creates pixel-verified 4:3 landscape master storyboards with deterministically composited, crop-ready 16:9 landscape scene and blank slots, then renders narration-timed scenes with OpenAI TTS and FFmpeg.",
     "developerName": "Gyana Ranjan Mohanta",
     "category": "Productivity",
     "capabilities": [
@@ -29,7 +29,7 @@
     "defaultPrompt": [
       "Create a 4-minute explainer video from this topic with frequent visual changes.",
       "Turn this script into a 4-8 minute storyboard video with voiceover.",
-      "Generate one pixel-verified 9:16 portrait master storyboard whose populated and blank slots are deterministically enforced as exact 16:9 landscape frames."
+      "Generate one pixel-verified 4:3 landscape master storyboard whose populated and blank slots are deterministically enforced as exact 16:9 landscape frames."
     ],
     "brandColor": "#111827"
   }

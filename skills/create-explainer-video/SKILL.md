@@ -99,10 +99,10 @@ Produce the finished video in the user's current project workspace.
 
 4. Generate exactly one draft contact sheet with clearly separated scene regions. It is not the accepted master until deterministic canonicalization in step 7.
    - Make exactly one image-generation call total. The single prompt must contain every scene description, exact count, complete geometry contract, safe-margin requirements, and final compliance check.
-   - Require the single master image itself to be exact 9:16 portrait. Do not accept the image generator's closest alternative ratio.
+   - Require the single master image itself to be exact 4:3 landscape. Do not accept the image generator's closest alternative ratio.
    - Make every individual panel an exact 16:9 landscape frame, regardless of the final video's aspect ratio.
-   - Choose rows and columns that maximize the size of equal 16:9 panels inside the exact 9:16 canvas. Evaluate candidate column counts from 1 through `scene_count`, use `rows = ceil(scene_count / columns)`, account for uniform gutters and outer padding, and select the largest valid panel size.
-   - Center the grid on the portrait canvas. Plain neutral outer space is allowed because the 9:16 master and its 16:9 panels have different orientations; never stretch panels to fill that space.
+   - Choose rows and columns that maximize the size of equal 16:9 panels inside the exact 4:3 landscape canvas. Evaluate candidate column counts from 1 through `scene_count`, use `rows = ceil(scene_count / columns)`, account for uniform gutters and outer padding, and select the largest valid panel size.
+   - Center the grid on the landscape canvas. Plain neutral outer space is allowed; never stretch panels to fill that space.
    - Put all scenes into this one grid in row-major order. Leave only trailing unused cells plain neutral; never create a second master image or let the model invent filler scenes.
    - State the exact canvas dimensions, scene count, total cell count, row count, column count, panel dimensions, outer padding, gutters, and row-major reading order in the image-generation prompt.
    - Use identical panel dimensions, straight boundaries, and clear gutters so crops can be calculated deterministically.
@@ -117,18 +117,18 @@ Produce the finished video in the user's current project workspace.
    - Use visual hierarchy that reveals the idea within two seconds: title first, main visual path second, orange outcome or key phrase third, supporting notes last.
    - Use orange only for important words, arrows, outcomes, underlines, highlights, and occasional circles, boxes, or stars. Keep ordinary text black.
    - Ask image generation to include only the exact specified handwritten copy. After splitting, verify and deterministically correct or replace any malformed lettering so every final scene contains accurate text directly inside the composition.
-   - Request the highest available exact 9:16 resolution. Dense grids produce small panels, so always upscale the master before splitting it.
+   - Request the highest available exact 4:3 landscape resolution. Dense grids produce small panels, so always upscale the master before splitting it.
    - Inspect the draft for complete scene content, correct order, and separable panel regions. Reject a draft with missing, merged, duplicated, or clipped scenes. Approximate draft borders are not accepted as geometry; the compositor replaces them.
    - This inspection is only a draft-content check. Never declare the generated image final based on appearance; image-generation prompts cannot prove exact panel geometry.
 
    Use this prompt skeleton and append the numbered scene descriptions. Include the whiteboard-inspired block for the default style; replace only that block with an equally specific visual contract when the user explicitly requests another style.
 
    ```text
-   Create ONE master storyboard contact sheet as a single exact 9:16 portrait image containing ALL {SCENE_COUNT} scenes.
+   Create ONE master storyboard contact sheet as a single exact 4:3 landscape image containing ALL {SCENE_COUNT} scenes.
 
    HARD LAYOUT CONTRACT:
    - ONE IMAGE-GENERATION ATTEMPT ONLY: render every requested scene correctly in this single output. Do not defer, omit, or propose a retry.
-   - The complete outer canvas is exactly 9:16 portrait: {CANVAS_WIDTH}x{CANVAS_HEIGHT} pixels.
+   - The complete outer canvas is exactly 4:3 landscape: {CANVAS_WIDTH}x{CANVAS_HEIGHT} pixels, satisfying width x 3 = height x 4.
    - Exactly {COLUMNS} columns by {ROWS} rows: {CELL_COUNT} equal panel positions total.
    - Every panel is exactly 16:9 landscape at {PANEL_WIDTH}x{PANEL_HEIGHT} pixels and satisfies width x 9 = height x 16.
    - Use {OUTER_PADDING}px outer padding and {GUTTER}px uniform gutters. Center the grid and leave any remaining canvas plain neutral.
@@ -181,7 +181,7 @@ Produce the finished video in the user's current project workspace.
    SLIDES IN ROW-MAJOR ORDER:
    {NUMBERED_SCENE_DESCRIPTIONS}
 
-   Final compliance check: exactly one 9:16 portrait image at {CANVAS_WIDTH}x{CANVAS_HEIGHT}; {COLUMNS}x{ROWS} equal grid; {CELL_COUNT} panel positions; all {SCENE_COUNT} requested scenes; every panel exact 16:9 at {PANEL_WIDTH}x{PANEL_HEIGHT}; all scenes fully inside the canvas; no crop includes padding or gutters; every slide communicates one idea within two seconds; every slide has exact handwritten text and a distinct uncrowded composition; the sequence follows one causal narrative spine, reaches a genuine turning point, pays off every open loop and visual callback, is understandable without narration, and feels like a professional hand-drawn presentation created by a skilled visual storyteller.
+   Final compliance check: exactly one 4:3 landscape image at {CANVAS_WIDTH}x{CANVAS_HEIGHT}, satisfying width x 3 = height x 4; {COLUMNS}x{ROWS} equal grid; {CELL_COUNT} panel positions; all {SCENE_COUNT} requested scenes; every panel exact 16:9 at {PANEL_WIDTH}x{PANEL_HEIGHT}, satisfying width x 9 = height x 16; all scenes fully inside the canvas; no crop includes padding or gutters; every slide communicates one idea within two seconds; every slide has exact handwritten text and a distinct uncrowded composition; the sequence follows one causal narrative spine, reaches a genuine turning point, pays off every open loop and visual callback, is understandable without narration, and feels like a professional hand-drawn presentation created by a skilled visual storyteller.
    ```
 
 5. Call `upscale_image` for the draft storyboard.
@@ -198,7 +198,7 @@ Produce the finished video in the user's current project workspace.
 7. Extract draft scene candidates, then build the canonical master with strict pixel geometry.
    - Extract each visible scene from `storyboard-draft-upscaled.png` into a temporary candidate image. These candidate crops are draft artwork, so their initial ratio is not trusted.
    - Run the bundled `scripts/canonicalize_storyboard.py` with the candidate scene directory, `--output assets/storyboard/storyboard-upscaled.png`, and `--manifest output/storyboard-geometry.json`.
-   - The compositor must scale each candidate to cover and center-crop it into one exact 16:9 slot without stretching, assemble all populated and unused slots on one exact 9:16 canvas, and draw deterministic borders and gutters.
+   - The compositor must scale each candidate to cover and center-crop it into one exact 16:9 slot without stretching, assemble all populated and unused slots on one exact 4:3 landscape canvas, and draw deterministic borders and gutters.
    - Treat `assets/storyboard/storyboard-upscaled.png` as the only accepted master. Never use the generated draft as the final master.
    - Copy each populated slot's exact `x`, `y`, `width`, and `height` from `output/storyboard-geometry.json` into the matching scene's `crop_panel` field.
    - Require every unused blank slot to have the identical `width`, `height`, and border geometry as populated scene slots. Do not export blank slots as scenes.
@@ -265,7 +265,7 @@ Produce the finished video in the user's current project workspace.
 12. Validate:
    - duration is 4-8 minutes unless the user explicitly requested a shorter video,
    - scene count is within the calculated 5-6-slides-per-minute range,
-   - exactly one master storyboard exists, is exact 9:16 portrait, and contains the declared centered grid,
+   - exactly one master storyboard exists, is exact 4:3 landscape, and contains the declared centered grid,
    - `output/storyboard-geometry.json` exists and records `ratio_verified: true` for the master, every populated slot, and every unused blank slot,
    - every extracted storyboard scene satisfies the exact integer equality `width * 9 == height * 16`, with no tolerance or rounding exception,
    - every scene fills the frame,
@@ -318,14 +318,14 @@ Produce the finished video in the user's current project workspace.
 
 ## Storyboard sizing
 
-Choose slide count after the narration is final but before voiceover generation. Use the requested or planned speaking duration to calculate an inclusive range of `ceil(duration_seconds / 12)` through `floor(duration_seconds / 10)`, then choose a count inside it based on meaningful visual ideas. This yields a planned cadence of 5-6 slides per minute, or 10-12 seconds per slide on average. Generate and upscale the draft, extract scene candidates, canonicalize the accepted master and exact scenes, then begin voiceover work. Afterward, generate one voiceover per scene and replace all estimated timing with cumulative measured clip durations. Give each slide 2-4 narration-triggered reveal beats, resolving their exact timestamps only after word alignment. Fit every exact 16:9 slide into one pixel-verified 9:16 portrait master using a centered row-major grid with recorded crop rectangles. Never exceed 8 minutes.
+Choose slide count after the narration is final but before voiceover generation. Use the requested or planned speaking duration to calculate an inclusive range of `ceil(duration_seconds / 12)` through `floor(duration_seconds / 10)`, then choose a count inside it based on meaningful visual ideas. This yields a planned cadence of 5-6 slides per minute, or 10-12 seconds per slide on average. Generate and upscale the draft, extract scene candidates, canonicalize the accepted master and exact scenes, then begin voiceover work. Afterward, generate one voiceover per scene and replace all estimated timing with cumulative measured clip durations. Give each slide 2-4 narration-triggered reveal beats, resolving their exact timestamps only after word alignment. Fit every exact 16:9 slide into one pixel-verified 4:3 landscape master using a centered row-major grid with recorded crop rectangles. Never exceed 8 minutes.
 
 Examples:
 
-- 60 seconds: 5-6 slides; calculate the largest centered 16:9 panel grid inside one 9:16 master.
-- 240 seconds: 20-24 slides; calculate the largest centered 16:9 panel grid inside one 9:16 master.
-- 360 seconds: 30-36 slides; calculate the largest centered 16:9 panel grid inside one 9:16 master.
-- 480 seconds: 40-48 slides; calculate the largest centered 16:9 panel grid inside one 9:16 master.
+- 60 seconds: 5-6 slides; calculate the largest centered 16:9 panel grid inside one 4:3 master.
+- 240 seconds: 20-24 slides; calculate the largest centered 16:9 panel grid inside one 4:3 master.
+- 360 seconds: 30-36 slides; calculate the largest centered 16:9 panel grid inside one 4:3 master.
+- 480 seconds: 40-48 slides; calculate the largest centered 16:9 panel grid inside one 4:3 master.
 
 Suggested narrative progression:
 
