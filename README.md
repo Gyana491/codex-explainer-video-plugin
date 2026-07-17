@@ -41,6 +41,29 @@ No local API keys or MCP server configuration are required for the published plu
 
 The plugin uses OpenAI voiceover through its bundled media service; it does not use ElevenLabs. Storyboard panels can be combined with editable Remotion overlays for diagrams, charts, equations, labels, counters, and kinetic text. FFmpeg remains the final media-processing layer.
 
+Overlay projects include a fast visual layout analyzer. Run it before the final Remotion render to catch text or filled shapes that collide with dense illustration detail:
+
+```bash
+npm run layout-check
+```
+
+The same checker can be run from the plugin root against an existing generated project:
+
+```bash
+node scripts/analyze-overlay-layout.mjs my-video/src/project.json --json my-video/output/layout-report.json
+```
+
+For smarter placement, add scene `objects` and per-text `intent` metadata in `project.json`, then run:
+
+```bash
+npm run layout-fix
+npm run layout-stills
+```
+
+`layout-fix` can move text with collisions or `intent.autoPlace: true`; `layout-stills` renders a quick contact sheet at `output/qa/layout/layout-contact-sheet.png` for review before a full MP4 render.
+
+A successful render leaves only the finalized `output/explainer-video.mp4`. The larger Remotion intermediate is retained only when finalization fails, so it remains available for diagnosis without accumulating duplicate deliverables.
+
 On Windows ARM64, run the bundled overlay template with x64 Node.js under Windows emulation because Remotion does not publish its native compositor for that architecture. The template preflight reports this clearly before rendering. Set `REMOTION_BROWSER_EXECUTABLE` to override browser discovery when a custom Chrome or Edge path is needed.
 
 ## Verify the installation

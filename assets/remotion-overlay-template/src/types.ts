@@ -10,6 +10,34 @@ export type TextRole = "title" | "label" | "value" | "definition" | "equation" |
 export type ShapeType = "circle" | "rounded-rect" | "line" | "arrow" | "progress-bar";
 export type AnimationAction = "reveal" | "draw" | "grow" | "count" | "move" | "pulse" | "highlight";
 export type Easing = "linear" | "ease-out" | "ease-in-out" | "spring";
+export type LayoutPlacement =
+  | "above"
+  | "below"
+  | "left"
+  | "right"
+  | "near"
+  | "inside"
+  | "top-left"
+  | "top-right"
+  | "bottom-left"
+  | "bottom-right";
+
+export interface LayoutIntent {
+  target?: string;
+  placement?: LayoutPlacement;
+  avoid?: string[];
+  priority?: "low" | "medium" | "high";
+  autoPlace?: boolean;
+  maxDistance?: number;
+}
+
+export interface LayoutObject {
+  id: string;
+  type: "character" | "face" | "hand" | "object" | "diagram" | "reserved" | "caption" | "artwork";
+  bbox: [number, number, number, number];
+  avoid?: boolean;
+  label?: string;
+}
 
 export interface EssentialText {
   id: string;
@@ -23,6 +51,7 @@ export interface EssentialText {
   background?: string;
   numericValue?: number;
   suffix?: string;
+  intent?: LayoutIntent;
 }
 
 export interface Shape {
@@ -37,6 +66,7 @@ export interface Shape {
   fill?: string;
   stroke?: string;
   strokeWidth?: number;
+  intent?: LayoutIntent;
 }
 
 export interface AnimationCue {
@@ -60,6 +90,7 @@ export interface ExplainerScene {
   durationSeconds: number;
   backgroundImage: string;
   cameraMotion?: CameraMotion;
+  objects?: LayoutObject[];
   overlay?: SceneOverlay;
 }
 

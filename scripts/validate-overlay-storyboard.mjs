@@ -22,6 +22,18 @@ const allowedStrategies = new Set([
 ]);
 const allowedShapes = new Set(["circle", "rounded-rect", "line", "arrow", "progress-bar"]);
 const allowedActions = new Set(["reveal", "draw", "grow", "count", "move", "pulse", "highlight"]);
+const allowedPlacements = new Set([
+  "above",
+  "below",
+  "left",
+  "right",
+  "near",
+  "inside",
+  "top-left",
+  "top-right",
+  "bottom-left",
+  "bottom-right",
+]);
 
 if (!Number.isFinite(project.fps) || project.fps <= 0) errors.push("fps must be positive");
 if (!Number.isFinite(project.width) || project.width <= 0) errors.push("width must be positive");
@@ -40,6 +52,17 @@ for (const [index, scene] of (project.scenes ?? []).entries()) {
     totalDuration += scene.durationSeconds;
   }
   if (!scene.backgroundImage) errors.push(`${location}.backgroundImage is required`);
+  for (const [objectIndex, object] of (scene.objects ?? []).entries()) {
+    const objectLocation = `${location}.objects[${objectIndex}]`;
+    if (!object.id) errors.push(`${objectLocation}.id is required`);
+    if (!Array.isArray(object.bbox) || object.bbox.length !== 4) {
+      errors.push(`${objectLocation}.bbox must be [x1, y1, x2, y2]`);
+    } else {
+      object.bbox.forEach((value, bboxIndex) => checkUnit(value, `${objectLocation}.bbox[${bboxIndex}]`, errors));
+      if (object.bbox[2] <= object.bbox[0]) errors.push(`${objectLocation}.bbox x2 must be greater than x1`);
+      if (object.bbox[3] <= object.bbox[1]) errors.push(`${objectLocation}.bbox y2 must be greater than y1`);
+    }
+  }
   const overlay = scene.overlay;
   if (!overlay) continue;
   if (!allowedStrategies.has(overlay.strategy)) errors.push(`${location}.overlay.strategy is unsupported`);
@@ -56,6 +79,7 @@ for (const [index, scene] of (project.scenes ?? []).entries()) {
     checkUnit(text.x, `${textLocation}.x`, errors);
     checkUnit(text.y, `${textLocation}.y`, errors);
     if (text.maxWidth !== undefined) checkUnit(text.maxWidth, `${textLocation}.maxWidth`, errors);
+    checkIntent(text.intent, `${textLocation}.intent`, errors);
   }
 
   for (const [shapeIndex, shape] of (overlay.shapes ?? []).entries()) {
@@ -72,6 +96,7 @@ for (const [index, scene] of (project.scenes ?? []).entries()) {
       checkUnit(shape.width, `${shapeLocation}.width`, errors);
       checkUnit(shape.height, `${shapeLocation}.height`, errors);
     }
+    checkIntent(shape.intent, `${shapeLocation}.intent`, errors);
   }
 
   for (const [cueIndex, cue] of (overlay.animationCues ?? []).entries()) {
@@ -100,5 +125,18 @@ console.log(`Valid overlay storyboard: ${project.scenes.length} scenes, ${totalD
 
 function checkUnit(value, location, output) {
   if (!Number.isFinite(value) || value < 0 || value > 1) output.push(`${location} must be between 0 and 1`);
+}
+
+function checkIntent(intent, location, output) {
+  if (intent === undefined) return;
+  if (typeof intent !== "object" || Array.isArray(intent)) {
+    output.push(`${location} must be an object`);
+    return;
+  }
+  if (intent.placement !== undefined && !allowedPlacements.has(intent.placement)) {
+    output.push(`${location}.placement is unsupported`);
+  }
+  if (intent.avoid !== undefined && !Array.isArray(intent.avoid)) output.push(`${location}.avoid must be an array`);
+  if (intent.maxDistance !== undefined) checkUnit(intent.maxDistance, `${location}.maxDistance`, output);
 }
 

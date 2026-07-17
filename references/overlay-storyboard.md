@@ -57,13 +57,38 @@ Use `1080x1920` for vertical output. Scene durations must sum to the measured vo
   "align": "center",
   "maxWidth": 0.22,
   "numericValue": 72,
-  "suffix": "%"
+  "suffix": "%",
+  "intent": {
+    "target": "output-node",
+    "placement": "above",
+    "avoid": ["face", "caption"],
+    "priority": "high",
+    "autoPlace": true
+  }
 }
 ```
 
 Coordinates and widths are normalized from `0` to `1`. `role` is one of `title`, `label`, `value`, `definition`, `equation`, or `takeaway`.
 
 Only include text necessary to understand the visual: names, short definitions, numbers and units, diagram labels, equations, step names, and the key takeaway. Prefer 1-6 words. Never place essential copy inside generated artwork. Keep subtitles separate from `essentialText`.
+
+Use `intent` when a text element needs to stay visually attached to a generated object or overlay shape. `target` may reference a shape, another text element, or a scene object. `placement` is one of `above`, `below`, `left`, `right`, `near`, `inside`, `top-left`, `top-right`, `bottom-left`, or `bottom-right`. Set `autoPlace: true` when the local solver is allowed to move the text before rendering.
+
+## Scene objects and avoid zones
+
+Add `objects` when important generated illustration regions should guide overlay placement:
+
+```json
+{
+  "objects": [
+    {"id": "maya", "type": "character", "bbox": [0.03, 0.28, 0.22, 0.82]},
+    {"id": "tree", "type": "artwork", "bbox": [0.78, 0.18, 0.96, 0.80]},
+    {"id": "caption-band", "type": "caption", "bbox": [0.20, 0.82, 0.80, 0.98]}
+  ]
+}
+```
+
+Object boxes use normalized `[x1, y1, x2, y2]` coordinates. Use them for faces, hands, screens, detailed objects, important diagram art, and reserved caption areas. Keep boxes tight; overly broad avoid zones make the solver push labels too far away from their targets.
 
 ## Shapes
 
@@ -109,4 +134,43 @@ Treat `x` and `y` as the center for circles and rounded rectangles, and as the s
 Use `startProgress` for deterministic timing. It is normalized within the scene. Preserve `triggerPhrase` as planning metadata; if word-level alignment is added later, it can replace the approximate progress without changing the scene contract.
 
 Every cue target must match a shape or essential-text ID. Use no more than five cues per scene unless the explanation genuinely requires more.
+
+## Visual-aware layout QA
+
+Run the layout analyzer after `project.json` is written and before the expensive final render:
+
+```powershell
+node scripts/analyze-overlay-layout.mjs src/project.json --json output/layout-report.json
+```
+
+From the plugin root, run:
+
+```powershell
+node scripts/analyze-overlay-layout.mjs <copied-template>/src/project.json --json <copied-template>/output/layout-report.json
+```
+
+The analyzer uses FFmpeg to sample each background scene, estimate dense illustration regions, and compare them with deterministic text and shape boxes. It does not mutate the project. It reports:
+
+- text that sits on dense artwork,
+- filled shapes that cover dense illustration detail,
+- overlapping text boxes,
+- suggested safer normalized `x`/`y` positions for risky text.
+
+Treat this as a fast pre-render gate. Fix reported overlay positions in `project.json`, rerun the analyzer, then render only when it reports zero unexpected findings.
+
+To let the solver write improved text positions back into `project.json`, run:
+
+```powershell
+npm run layout-fix
+```
+
+Only text with a collision or `intent.autoPlace: true` is moved by default. Use tight scene objects plus explicit `target` and `placement` fields so the solver keeps labels close to the illustration element they explain.
+
+To review one near-final still per scene without rendering a full MP4, run:
+
+```powershell
+npm run layout-stills
+```
+
+This writes individual scene stills and `output/qa/layout/layout-contact-sheet.png`.
 

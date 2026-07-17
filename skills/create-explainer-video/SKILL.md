@@ -213,6 +213,7 @@ Read [the overlay storyboard contract](../../references/overlay-storyboard.md) b
    - Keep text inside title-safe margins and verify legibility at the final output resolution.
    - Keep text away from faces, hands, screens, detailed illustrations, and the karaoke caption-safe area. Preserve generous whitespace and remove any nonessential note that creates crowding.
    - For each scene choose `artwork-only`, `kinetic-text`, `diagram`, `chart`, `equation`, or `artwork-with-overlays`. Give every text, shape, and cue a stable ID and normalized geometry.
+   - Add tight `objects` boxes for faces, hands, screens, detailed illustration regions, major recurring objects, and caption-safe areas. Add `intent` metadata to labels and values that should stay attached to a shape or generated object, including `target`, `placement`, `avoid`, and `autoPlace` when the solver may move it.
    - Preserve editable overlay instructions in `output/storyboard.json`; never leave unverified generated lettering as the only source of essential information.
 
 8. Generate one voiceover file separately for every finished scene.
@@ -254,6 +255,15 @@ Read [the overlay storyboard contract](../../references/overlay-storyboard.md) b
      ```powershell
      node ../../scripts/validate-overlay-storyboard.mjs <copied-template>/src/project.json
      ```
+
+   - Run visual-aware layout QA before the expensive render:
+
+     ```powershell
+     node <copied-template>/scripts/analyze-overlay-layout.mjs <copied-template>/src/project.json --json <copied-template>/output/layout-report.json
+     ```
+
+     Fix any text that collides with dense artwork, faces, hands, screens, borders, or the caption-safe area before rendering.
+     When scene objects and text intents are present, run `npm run layout-fix` inside the copied template to apply safe text positions, then run `npm run layout-stills` to review one near-final still per scene before the full MP4 render.
 
    - In the copied template run `npm install`, `npm run preflight`, `npm run type-check`, and `npm run render`. On Windows ARM64, use x64 Node under Windows emulation because Remotion does not publish a native ARM64 compositor.
    - Use each slide's `reveal_beats` to synchronize progressive draw-on strokes, text, orange underlines, arrows, highlights, callouts, diagram states, character emphasis, and subtle pans or zooms with the corresponding voiceover phrases.
@@ -305,6 +315,7 @@ Read [the overlay storyboard contract](../../references/overlay-storyboard.md) b
    - captions match the narration exactly, remain inside title-safe margins, and highlight the active word at the correct audible moment,
    - caption placement does not obscure essential slide content or conflict with the slide's own text,
    - `output/overlay-project.json` passes the bundled validator whenever any scene uses a non-`artwork-only` strategy,
+   - `output/layout-report.json` exists for overlay renders and has no unexpected errors or warnings,
    - every overlay stays inside its safe area, uses stable IDs, and starts at the resolved timestamp and deterministic `startProgress`,
    - `output/source-essence.json` captures the source's central idea, essential support, meaningful qualifications, and final takeaway without tangents,
    - the narration covers every `must_understand_point`, contains no unsupported claims, and preserves important uncertainty,
@@ -324,6 +335,7 @@ Read [the overlay storyboard contract](../../references/overlay-storyboard.md) b
    - karaoke captions: `output/captions.ass`
    - locked voice configuration: `output/voice-config.json`
    - editable overlay project: `output/overlay-project.json`
+   - overlay layout QA report: `output/layout-report.json`
    - render command: `output/render-command.txt`
 
 ## Storyboard sizing

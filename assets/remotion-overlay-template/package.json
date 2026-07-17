@@ -4,10 +4,13 @@
   "version": "1.0.0",
   "scripts": {
     "preflight": "node scripts/preflight.mjs",
+    "layout-check": "node scripts/analyze-overlay-layout.mjs src/project.json",
+    "layout-fix": "node scripts/analyze-overlay-layout.mjs src/project.json --apply --json output/layout-report.json",
+    "layout-stills": "node scripts/render-layout-stills.mjs",
     "prerender": "npm run preflight",
     "render": "npm run render:remotion && npm run finalize",
     "render:remotion": "remotion render src/index.ts ExplainerVideo output/explainer-video-remotion.mp4",
-    "finalize": "ffmpeg -y -i output/explainer-video-remotion.mp4 -vf \"scale=in_range=full:out_range=tv,format=yuv420p\" -c:v libx264 -pix_fmt yuv420p -color_range tv -c:a aac -movflags +faststart output/explainer-video.mp4",
+    "finalize": "node scripts/finalize-render.mjs",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {

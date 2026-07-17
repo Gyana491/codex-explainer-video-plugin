@@ -1,7 +1,6 @@
 node_modules/
 output/
-compound-interest-video/
-virality-explainer-video/
+.local-videos/
 assets/remotion-overlay-template/output/
 .tools/
 assets/remotion-overlay-template/public/scenes/*
