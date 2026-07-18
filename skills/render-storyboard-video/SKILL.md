@@ -34,8 +34,9 @@ Read [the overlay contract](../../references/overlay-storyboard.md) when the sto
    - Use FFmpeg pans, zooms, and crossfades for `artwork-only` scenes.
    - Use the bundled Remotion template for kinetic text, diagrams, charts, equations, or artwork with overlays. Copy `../../assets/remotion-overlay-template` into the writable project, replace `src/project.json`, place panels under `public/scenes`, and place the joined narration under `public/audio`.
    - Keep exact titles, labels, numbers, equations, chart values, and factual relationships in deterministic overlays. Treat generated lettering as non-authoritative artwork.
-   - Give every overlay element and animation cue a stable ID, normalized geometry, a resolved timestamp, and deterministic scene-relative `startProgress`.
-   - Add tight `objects` boxes for generated illustration regions that overlays must avoid, and `intent` metadata for labels or values that should stay near a specific shape or object.
+   - Give every overlay element and animation cue a stable ID, normalized geometry, and either deterministic scene-relative `startProgress` or exact scene-relative `startSeconds`.
+   - Add tight `objects` boxes for generated illustration regions. Use anchored `groups` for callouts whose shape, label, connector, and value must move together; add `intent` metadata for ungrouped labels or values that should stay near a specific shape or object.
+   - Put titles and caption-like elements in `screen` coordinates. Put annotations and cutouts that must follow camera motion in `artwork` coordinates. Use explicit `zIndex` values and transparent assets under `public/overlays` when a diagram must pass behind a foreground illustration.
    - Validate the project before rendering:
 
      ```powershell
@@ -49,7 +50,7 @@ Read [the overlay contract](../../references/overlay-storyboard.md) when the sto
      ```
 
      Fix reported collisions before spending time on the final Remotion render.
-     When text contains `intent.autoPlace: true`, run `npm run layout-fix` inside the copied template, then run `npm run layout-stills` to inspect the solved layout as still frames.
+     When text contains `intent.autoPlace: true` or belongs to an anchored group, run `npm run layout-fix` inside the copied template, then run `npm run layout-stills` to inspect the solved layout as still frames.
 
    - In the copied template run `npm install`, `npm run preflight`, `npm run type-check`, and `npm run render`. On Windows ARM64, use x64 Node under Windows emulation because Remotion does not publish a native ARM64 compositor.
    - Set every image duration from its matching measured audio clip. Keep narration untouched and execute reveal beats at aligned timestamps.

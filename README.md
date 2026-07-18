@@ -39,7 +39,7 @@ The first command removes an older marketplace registration. If Codex reports th
 
 No local API keys or MCP server configuration are required for the published plugin.
 
-The plugin uses OpenAI voiceover through its bundled media service; it does not use ElevenLabs. Storyboard panels can be combined with editable Remotion overlays for diagrams, charts, equations, labels, counters, and kinetic text. FFmpeg remains the final media-processing layer.
+The plugin uses OpenAI voiceover through its bundled media service; it does not use ElevenLabs. Storyboard panels can be combined with editable Remotion overlays for diagrams, charts, equations, labels, counters, kinetic text, and transparent foreground cutouts. Overlays support explicit depth, anchored groups, and separate artwork/screen coordinate spaces so annotations can follow camera motion while titles remain fixed. FFmpeg remains the final media-processing layer.
 
 Overlay projects include a fast visual layout analyzer. Run it before the final Remotion render to catch text or filled shapes that collide with dense illustration detail:
 
@@ -53,14 +53,14 @@ The same checker can be run from the plugin root against an existing generated p
 node scripts/analyze-overlay-layout.mjs my-video/src/project.json --json my-video/output/layout-report.json
 ```
 
-For smarter placement, add scene `objects` and per-text `intent` metadata in `project.json`, then run:
+For smarter placement, add scene `objects`, anchored overlay `groups`, and element `intent` metadata in `project.json`, then run:
 
 ```bash
 npm run layout-fix
 npm run layout-stills
 ```
 
-`layout-fix` can move text with collisions or `intent.autoPlace: true`; `layout-stills` renders a quick contact sheet at `output/qa/layout/layout-contact-sheet.png` for review before a full MP4 render.
+`layout-fix` can move individual text or complete anchored groups; `layout-stills` renders a quick contact sheet at `output/qa/layout/layout-contact-sheet.png` for review before a full MP4 render.
 
 A successful render leaves only the finalized `output/explainer-video.mp4`. The larger Remotion intermediate is retained only when finalization fails, so it remains available for diagnosis without accumulating duplicate deliverables.
 

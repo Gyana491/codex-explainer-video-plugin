@@ -22,6 +22,8 @@ const allowedStrategies = new Set([
 ]);
 const allowedShapes = new Set(["circle", "rounded-rect", "line", "arrow", "progress-bar"]);
 const allowedActions = new Set(["reveal", "draw", "grow", "count", "move", "pulse", "highlight"]);
+const allowedCoordinateSpaces = new Set(["screen", "artwork"]);
+const allowedAssetFits = new Set(["contain", "cover", "fill"]);
 const allowedPlacements = new Set([
   "above",
   "below",
@@ -68,6 +70,25 @@ for (const [index, scene] of (project.scenes ?? []).entries()) {
   if (!allowedStrategies.has(overlay.strategy)) errors.push(`${location}.overlay.strategy is unsupported`);
 
   const ids = new Set();
+  const groupIds = new Set();
+  const objectIds = new Set((scene.objects ?? []).map((object) => object.id));
+  const intentReferences = [];
+  for (const [groupIndex, group] of (overlay.groups ?? []).entries()) {
+    const groupLocation = `${location}.overlay.groups[${groupIndex}]`;
+    if (!group.id || ids.has(group.id)) errors.push(`${groupLocation}.id must be present and unique`);
+    ids.add(group.id);
+    groupIds.add(group.id);
+    if (group.placement !== undefined && !allowedPlacements.has(group.placement)) {
+      errors.push(`${groupLocation}.placement is unsupported`);
+    }
+    if (group.coordinateSpace !== undefined && !allowedCoordinateSpaces.has(group.coordinateSpace)) {
+      errors.push(`${groupLocation}.coordinateSpace is unsupported`);
+    }
+    if (group.bbox !== undefined) checkBox(group.bbox, `${groupLocation}.bbox`, errors);
+    if (group.offsetX !== undefined) checkSignedUnit(group.offsetX, `${groupLocation}.offsetX`, errors);
+    if (group.offsetY !== undefined) checkSignedUnit(group.offsetY, `${groupLocation}.offsetY`, errors);
+    if (group.zIndex !== undefined && !Number.isFinite(group.zIndex)) errors.push(`${groupLocation}.zIndex must be finite`);
+  }
   for (const [textIndex, text] of (overlay.essentialText ?? []).entries()) {
     const textLocation = `${location}.overlay.essentialText[${textIndex}]`;
     if (!text.id || ids.has(text.id)) errors.push(`${textLocation}.id must be present and unique`);
@@ -80,6 +101,8 @@ for (const [index, scene] of (project.scenes ?? []).entries()) {
     checkUnit(text.y, `${textLocation}.y`, errors);
     if (text.maxWidth !== undefined) checkUnit(text.maxWidth, `${textLocation}.maxWidth`, errors);
     checkIntent(text.intent, `${textLocation}.intent`, errors);
+    checkLayer(text, textLocation, groupIds, errors);
+    if (text.intent?.target) intentReferences.push({target: text.intent.target, location: `${textLocation}.intent.target`});
   }
 
   for (const [shapeIndex, shape] of (overlay.shapes ?? []).entries()) {
@@ -97,18 +120,65 @@ for (const [index, scene] of (project.scenes ?? []).entries()) {
       checkUnit(shape.height, `${shapeLocation}.height`, errors);
     }
     checkIntent(shape.intent, `${shapeLocation}.intent`, errors);
+    checkLayer(shape, shapeLocation, groupIds, errors);
+    if (shape.intent?.target) intentReferences.push({target: shape.intent.target, location: `${shapeLocation}.intent.target`});
+  }
+
+  for (const [assetIndex, asset] of (overlay.assets ?? []).entries()) {
+    const assetLocation = `${location}.overlay.assets[${assetIndex}]`;
+    if (!asset.id || ids.has(asset.id)) errors.push(`${assetLocation}.id must be present and unique`);
+    ids.add(asset.id);
+    if (!asset.src?.trim()) errors.push(`${assetLocation}.src is required`);
+    checkUnit(asset.x, `${assetLocation}.x`, errors);
+    checkUnit(asset.y, `${assetLocation}.y`, errors);
+    checkUnit(asset.width, `${assetLocation}.width`, errors);
+    checkUnit(asset.height, `${assetLocation}.height`, errors);
+    if (asset.width <= 0) errors.push(`${assetLocation}.width must be greater than zero`);
+    if (asset.height <= 0) errors.push(`${assetLocation}.height must be greater than zero`);
+    if (asset.opacity !== undefined) checkUnit(asset.opacity, `${assetLocation}.opacity`, errors);
+    if (asset.fit !== undefined && !allowedAssetFits.has(asset.fit)) errors.push(`${assetLocation}.fit is unsupported`);
+    checkIntent(asset.intent, `${assetLocation}.intent`, errors);
+    checkLayer(asset, assetLocation, groupIds, errors);
+    if (asset.intent?.target) intentReferences.push({target: asset.intent.target, location: `${assetLocation}.intent.target`});
+  }
+
+  for (const [groupIndex, group] of (overlay.groups ?? []).entries()) {
+    if (group.anchorTo && !objectIds.has(group.anchorTo) && !ids.has(group.anchorTo)) {
+      errors.push(`${location}.overlay.groups[${groupIndex}].anchorTo does not match a scene object or overlay element`);
+    }
+  }
+  for (const reference of intentReferences) {
+    if (!objectIds.has(reference.target) && !ids.has(reference.target)) {
+      errors.push(`${reference.location} does not match a scene object or overlay element`);
+    }
   }
 
   for (const [cueIndex, cue] of (overlay.animationCues ?? []).entries()) {
     const cueLocation = `${location}.overlay.animationCues[${cueIndex}]`;
     if (!allowedActions.has(cue.action)) errors.push(`${cueLocation}.action is unsupported`);
     if (!ids.has(cue.target)) errors.push(`${cueLocation}.target does not match an overlay element`);
-    checkUnit(cue.startProgress, `${cueLocation}.startProgress`, errors);
+    if (cue.startProgress === undefined && cue.startSeconds === undefined) {
+      errors.push(`${cueLocation} requires startProgress or startSeconds`);
+    }
+    if (cue.startProgress !== undefined && cue.startSeconds !== undefined) {
+      errors.push(`${cueLocation} cannot set both startProgress and startSeconds`);
+    }
+    if (cue.startProgress !== undefined) checkUnit(cue.startProgress, `${cueLocation}.startProgress`, errors);
+    if (cue.startSeconds !== undefined) {
+      if (!Number.isFinite(cue.startSeconds) || cue.startSeconds < 0 || cue.startSeconds > scene.durationSeconds) {
+        errors.push(`${cueLocation}.startSeconds must be within the scene duration`);
+      }
+    }
     if (!Number.isFinite(cue.durationSeconds) || cue.durationSeconds <= 0) {
       errors.push(`${cueLocation}.durationSeconds must be positive`);
     }
+    if (cue.offsetX !== undefined) checkSignedUnit(cue.offsetX, `${cueLocation}.offsetX`, errors);
+    if (cue.offsetY !== undefined) checkSignedUnit(cue.offsetY, `${cueLocation}.offsetY`, errors);
+    if (cue.action === "move" && cue.offsetX === undefined && cue.offsetY === undefined) {
+      errors.push(`${cueLocation}.move requires offsetX or offsetY`);
+    }
   }
-  if ((overlay.animationCues ?? []).length > 5) warnings.push(`${location} has more than five animation cues`);
+  if ((overlay.animationCues ?? []).length > 8) warnings.push(`${location} has more than eight animation cues`);
 }
 
 if (Number.isFinite(project.voiceoverDurationSeconds)) {
@@ -125,6 +195,30 @@ console.log(`Valid overlay storyboard: ${project.scenes.length} scenes, ${totalD
 
 function checkUnit(value, location, output) {
   if (!Number.isFinite(value) || value < 0 || value > 1) output.push(`${location} must be between 0 and 1`);
+}
+
+function checkSignedUnit(value, location, output) {
+  if (!Number.isFinite(value) || value < -1 || value > 1) output.push(`${location} must be between -1 and 1`);
+}
+
+function checkBox(value, location, output) {
+  if (!Array.isArray(value) || value.length !== 4) {
+    output.push(`${location} must be [x1, y1, x2, y2]`);
+    return;
+  }
+  value.forEach((coordinate, index) => checkUnit(coordinate, `${location}[${index}]`, output));
+  if (value[2] <= value[0]) output.push(`${location} x2 must be greater than x1`);
+  if (value[3] <= value[1]) output.push(`${location} y2 must be greater than y1`);
+}
+
+function checkLayer(element, location, groupIds, output) {
+  if (element.groupId !== undefined && !groupIds.has(element.groupId)) {
+    output.push(`${location}.groupId does not match an overlay group`);
+  }
+  if (element.coordinateSpace !== undefined && !allowedCoordinateSpaces.has(element.coordinateSpace)) {
+    output.push(`${location}.coordinateSpace is unsupported`);
+  }
+  if (element.zIndex !== undefined && !Number.isFinite(element.zIndex)) output.push(`${location}.zIndex must be finite`);
 }
 
 function checkIntent(intent, location, output) {

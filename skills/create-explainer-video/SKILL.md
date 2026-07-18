@@ -212,8 +212,9 @@ Read [the overlay storyboard contract](../../references/overlay-storyboard.md) b
    - Draw thin pointer lines from labels to targets only when necessary. Use occasional hand-drawn circles, boxes, stars, and underlines for emphasis.
    - Keep text inside title-safe margins and verify legibility at the final output resolution.
    - Keep text away from faces, hands, screens, detailed illustrations, and the karaoke caption-safe area. Preserve generous whitespace and remove any nonessential note that creates crowding.
-   - For each scene choose `artwork-only`, `kinetic-text`, `diagram`, `chart`, `equation`, or `artwork-with-overlays`. Give every text, shape, and cue a stable ID and normalized geometry.
-   - Add tight `objects` boxes for faces, hands, screens, detailed illustration regions, major recurring objects, and caption-safe areas. Add `intent` metadata to labels and values that should stay attached to a shape or generated object, including `target`, `placement`, `avoid`, and `autoPlace` when the solver may move it.
+   - For each scene choose `artwork-only`, `kinetic-text`, `diagram`, `chart`, `equation`, or `artwork-with-overlays`. Give every text, shape, asset, group, and cue a stable ID and normalized geometry.
+   - Add tight `objects` boxes for faces, hands, screens, detailed illustration regions, major recurring objects, and caption-safe areas. Use anchored `groups` when a label, value, card, and connector must remain together. Add `intent` metadata to ungrouped elements that should stay attached to a shape or generated object.
+   - Use `screen` coordinates for fixed titles and `artwork` coordinates for annotations that follow pan or zoom. Use transparent foreground cutouts plus explicit `zIndex` values when an overlay must pass behind an illustrated character or object.
    - Preserve editable overlay instructions in `output/storyboard.json`; never leave unverified generated lettering as the only source of essential information.
 
 8. Generate one voiceover file separately for every finished scene.
@@ -245,7 +246,7 @@ Read [the overlay storyboard contract](../../references/overlay-storyboard.md) b
    - Group words into natural phrases of roughly 3-7 words, no more than two lines, without crossing scene boundaries or awkward grammatical breaks.
    - Resolve every planned reveal beat's trigger phrase to an exact timestamp from `output/word-timings.json`, then update `output/storyboard.json`.
    - Write `output/captions.ass` with word-level karaoke timing so the currently spoken word can be emphasized independently while the surrounding phrase remains visible.
-   - Convert each planned overlay trigger into both an exact resolved timestamp and a deterministic scene-relative `startProgress`; rendering must remain reproducible even when word-alignment tooling is unavailable later.
+   - Convert each planned overlay trigger into an exact resolved timestamp. Store it as scene-relative `startSeconds` when known, otherwise use deterministic `startProgress`; preserve the trigger phrase as alignment metadata.
 
 11. Build the video from `output/scene-timings.json`.
    - Use FFmpeg pans, zooms, and crossfades for `artwork-only` scenes.
@@ -263,7 +264,7 @@ Read [the overlay storyboard contract](../../references/overlay-storyboard.md) b
      ```
 
      Fix any text that collides with dense artwork, faces, hands, screens, borders, or the caption-safe area before rendering.
-     When scene objects and text intents are present, run `npm run layout-fix` inside the copied template to apply safe text positions, then run `npm run layout-stills` to review one near-final still per scene before the full MP4 render.
+     When scene objects, anchored groups, or text intents are present, run `npm run layout-fix` inside the copied template to apply safe group/text positions, then run `npm run layout-stills` to review one near-final still per scene before the full MP4 render.
 
    - In the copied template run `npm install`, `npm run preflight`, `npm run type-check`, and `npm run render`. On Windows ARM64, use x64 Node under Windows emulation because Remotion does not publish a native ARM64 compositor.
    - Use each slide's `reveal_beats` to synchronize progressive draw-on strokes, text, orange underlines, arrows, highlights, callouts, diagram states, character emphasis, and subtle pans or zooms with the corresponding voiceover phrases.
@@ -316,7 +317,7 @@ Read [the overlay storyboard contract](../../references/overlay-storyboard.md) b
    - caption placement does not obscure essential slide content or conflict with the slide's own text,
    - `output/overlay-project.json` passes the bundled validator whenever any scene uses a non-`artwork-only` strategy,
    - `output/layout-report.json` exists for overlay renders and has no unexpected errors or warnings,
-   - every overlay stays inside its safe area, uses stable IDs, and starts at the resolved timestamp and deterministic `startProgress`,
+   - every overlay stays inside its safe area, uses stable IDs, follows the correct `screen` or `artwork` coordinate space, respects declared layer depth, and starts at its resolved `startSeconds` or deterministic `startProgress`,
    - `output/source-essence.json` captures the source's central idea, essential support, meaningful qualifications, and final takeaway without tangents,
    - the narration covers every `must_understand_point`, contains no unsupported claims, and preserves important uncertainty,
    - a cold listener can understand the narration without seeing the source or visuals,

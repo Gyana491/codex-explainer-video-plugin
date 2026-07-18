@@ -1,6 +1,6 @@
 # Overlay storyboard contract
 
-Use this contract when a scene needs editable text, diagrams, charts, equations, or other deterministic motion graphics. Generated storyboard panels remain background artwork; overlays carry exact information.
+Use this contract when a scene needs editable text, diagrams, charts, equations, cutout assets, or other deterministic motion graphics. Generated storyboard panels provide the base artwork; transparent foreground assets and editable overlays can be layered around them so the illustration and explanation read as one composition.
 
 ## Project shape
 
@@ -27,6 +27,8 @@ Use `1080x1920` for vertical output. Scene durations must sum to the measured vo
   "cameraMotion": "slow-zoom-in",
   "overlay": {
     "strategy": "diagram",
+    "groups": [],
+    "assets": [],
     "essentialText": [],
     "shapes": [],
     "animationCues": []
@@ -58,6 +60,9 @@ Use `1080x1920` for vertical output. Scene durations must sum to the measured vo
   "maxWidth": 0.22,
   "numericValue": 72,
   "suffix": "%",
+  "groupId": "output-callout",
+  "coordinateSpace": "artwork",
+  "zIndex": 20,
   "intent": {
     "target": "output-node",
     "placement": "above",
@@ -89,6 +94,57 @@ Add `objects` when important generated illustration regions should guide overlay
 ```
 
 Object boxes use normalized `[x1, y1, x2, y2]` coordinates. Use them for faces, hands, screens, detailed objects, important diagram art, and reserved caption areas. Keep boxes tight; overly broad avoid zones make the solver push labels too far away from their targets.
+
+## Layers and coordinate spaces
+
+Every text, shape, and asset may set `zIndex`, `groupId`, and `coordinateSpace`.
+
+- Use `coordinateSpace: "screen"` for titles, captions, and UI-like elements that must remain fixed while the camera moves.
+- Use `coordinateSpace: "artwork"` for arrows, labels, highlights, and cutouts attached to the illustration. These receive the same pan and zoom as the background artwork.
+- Use `zIndex` to interleave shapes, text, and transparent foreground assets. Shapes default to `10`, assets to `15`, and text to `20`.
+
+Do not rely on array order for depth. Declare `zIndex` whenever an overlay must pass behind or in front of a cutout.
+
+## Anchored groups
+
+Use a group when a card, label, connector, and value form one visual unit. Members keep their own normalized coordinates but move together.
+
+```json
+{
+  "groups": [
+    {
+      "id": "growth-callout",
+      "anchorTo": "tree",
+      "placement": "left",
+      "bbox": [0.58, 0.30, 0.82, 0.54],
+      "coordinateSpace": "artwork",
+      "zIndex": 20
+    }
+  ]
+}
+```
+
+Set each member's `groupId` to the group ID. `anchorTo` may reference a scene object or overlay element. The renderer resolves the group against that target, while `offsetX` and `offsetY` provide small signed normalized adjustments. The layout fixer moves the group as a unit instead of separating its text from its shapes.
+
+## Foreground and cutout assets
+
+Place transparent PNG, WebP, or SVG files under `public/overlays` and declare them in `assets`:
+
+```json
+{
+  "id": "maya-foreground",
+  "src": "overlays/maya-foreground.png",
+  "x": 0.78,
+  "y": 0.66,
+  "width": 0.32,
+  "height": 0.62,
+  "fit": "contain",
+  "coordinateSpace": "artwork",
+  "zIndex": 30
+}
+```
+
+Use cutouts to let arrows, diagrams, or cards pass behind an illustrated character or object. Keep the full background plate as the lowest layer; add only the foreground pieces needed to create useful depth.
 
 ## Shapes
 
@@ -133,7 +189,9 @@ Treat `x` and `y` as the center for circles and rounded rectangles, and as the s
 
 Use `startProgress` for deterministic timing. It is normalized within the scene. Preserve `triggerPhrase` as planning metadata; if word-level alignment is added later, it can replace the approximate progress without changing the scene contract.
 
-Every cue target must match a shape or essential-text ID. Use no more than five cues per scene unless the explanation genuinely requires more.
+Use `startSeconds` instead when an exact audio-resolved scene time is known; set exactly one of `startProgress` or `startSeconds`. A `move` cue also declares signed normalized `offsetX` and/or `offsetY`.
+
+Every cue target must match a group, asset, shape, or essential-text ID. Multiple cues may target the same element, so a group can reveal and later pulse or move. Use no more than eight cues per scene unless the explanation genuinely requires more.
 
 ## Visual-aware layout QA
 
@@ -149,7 +207,7 @@ From the plugin root, run:
 node scripts/analyze-overlay-layout.mjs <copied-template>/src/project.json --json <copied-template>/output/layout-report.json
 ```
 
-The analyzer uses FFmpeg to sample each background scene, estimate dense illustration regions, and compare them with deterministic text and shape boxes. It does not mutate the project. It reports:
+The analyzer uses FFmpeg to sample each raster background scene, estimate dense illustration regions, resolve anchored groups, and compare them with deterministic text, shape, and asset boxes. SVG backgrounds skip raster saliency but still receive geometry and overlap checks. The analyzer does not mutate the project unless `--apply` is used. It reports:
 
 - text that sits on dense artwork,
 - filled shapes that cover dense illustration detail,
@@ -164,7 +222,7 @@ To let the solver write improved text positions back into `project.json`, run:
 npm run layout-fix
 ```
 
-Only text with a collision or `intent.autoPlace: true` is moved by default. Use tight scene objects plus explicit `target` and `placement` fields so the solver keeps labels close to the illustration element they explain.
+Only text with a collision, an anchored group, or `intent.autoPlace: true` is moved by default. Grouped text moves by changing the group's offsets, keeping its associated shapes and assets together. Use tight scene objects plus explicit targets and placements so the solver keeps each callout close to the illustration element it explains.
 
 To review one near-final still per scene without rendering a full MP4, run:
 

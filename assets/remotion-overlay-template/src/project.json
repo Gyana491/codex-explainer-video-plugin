@@ -9,28 +9,42 @@
     {
       "id": "scene-01",
       "durationSeconds": 6,
-      "backgroundImage": "scenes/scene-01.png",
+      "backgroundImage": "scenes/template-background.svg",
       "cameraMotion": "slow-zoom-in",
+      "objects": [
+        {"id": "input-anchor", "type": "diagram", "bbox": [0.17, 0.38, 0.33, 0.62], "avoid": false},
+        {"id": "output-anchor", "type": "diagram", "bbox": [0.65, 0.38, 0.85, 0.62], "avoid": false},
+        {"id": "foreground-art", "type": "artwork", "bbox": [0.42, 0.64, 0.58, 0.98]}
+      ],
       "overlay": {
-        "strategy": "diagram",
+        "strategy": "artwork-with-overlays",
+        "groups": [
+          {"id": "input-group", "anchorTo": "input-anchor", "placement": "inside", "bbox": [0.17, 0.38, 0.33, 0.62], "coordinateSpace": "artwork", "zIndex": 10},
+          {"id": "output-group", "anchorTo": "output-anchor", "placement": "inside", "bbox": [0.65, 0.38, 0.85, 0.62], "coordinateSpace": "artwork", "zIndex": 10}
+        ],
+        "assets": [
+          {"id": "foreground-cutout", "src": "overlays/template-foreground.svg", "x": 0.5, "y": 0.81, "width": 0.18, "height": 0.36, "fit": "contain", "coordinateSpace": "artwork", "zIndex": 30}
+        ],
         "essentialText": [
-          {"id": "input-label", "text": "Input", "role": "label", "x": 0.25, "y": 0.5, "align": "center"},
-          {"id": "output-label", "text": "Useful output", "role": "label", "x": 0.75, "y": 0.5, "align": "center"}
+          {"id": "scene-title", "text": "Layered motion overlays", "role": "title", "x": 0.5, "y": 0.14, "align": "center", "maxWidth": 0.5, "coordinateSpace": "screen", "zIndex": 40},
+          {"id": "input-label", "text": "Input", "role": "label", "x": 0.25, "y": 0.5, "align": "center", "groupId": "input-group"},
+          {"id": "output-label", "text": "Useful output", "role": "label", "x": 0.75, "y": 0.5, "align": "center", "groupId": "output-group"}
         ],
         "shapes": [
-          {"id": "input-node", "type": "circle", "x": 0.25, "y": 0.5, "width": 0.16, "height": 0.16, "fill": "#2563eb"},
-          {"id": "flow-arrow", "type": "arrow", "x": 0.36, "y": 0.5, "x2": 0.64, "y2": 0.5, "stroke": "#f8fafc", "strokeWidth": 8},
-          {"id": "output-node", "type": "rounded-rect", "x": 0.75, "y": 0.5, "width": 0.2, "height": 0.15, "fill": "#f97316"}
+          {"id": "input-node", "type": "circle", "x": 0.25, "y": 0.5, "width": 0.16, "height": 0.16, "fill": "#2563eb", "groupId": "input-group"},
+          {"id": "flow-arrow", "type": "arrow", "x": 0.36, "y": 0.5, "x2": 0.64, "y2": 0.5, "stroke": "#f8fafc", "strokeWidth": 8, "coordinateSpace": "artwork", "zIndex": 12},
+          {"id": "output-node", "type": "rounded-rect", "x": 0.75, "y": 0.5, "width": 0.2, "height": 0.15, "fill": "#f97316", "groupId": "output-group"}
         ],
         "animationCues": [
-          {"action": "reveal", "target": "input-node", "startProgress": 0.05, "durationSeconds": 0.6, "easing": "spring"},
-          {"action": "reveal", "target": "input-label", "startProgress": 0.12, "durationSeconds": 0.4},
+          {"action": "reveal", "target": "scene-title", "startSeconds": 0.1, "durationSeconds": 0.5},
+          {"action": "reveal", "target": "input-group", "startProgress": 0.08, "durationSeconds": 0.6, "easing": "spring"},
           {"action": "draw", "target": "flow-arrow", "startProgress": 0.34, "durationSeconds": 0.8},
-          {"action": "reveal", "target": "output-node", "startProgress": 0.58, "durationSeconds": 0.6, "easing": "spring"},
-          {"action": "reveal", "target": "output-label", "startProgress": 0.66, "durationSeconds": 0.4}
+          {"action": "reveal", "target": "output-group", "startProgress": 0.58, "durationSeconds": 0.6, "easing": "spring"},
+          {"action": "pulse", "target": "output-group", "startProgress": 0.74, "durationSeconds": 0.7},
+          {"action": "reveal", "target": "foreground-cutout", "startProgress": 0.62, "durationSeconds": 0.5},
+          {"action": "move", "target": "foreground-cutout", "startProgress": 0.62, "durationSeconds": 0.8, "offsetY": -0.015, "easing": "ease-out"}
         ]
       }
     }
   ]
 }
-

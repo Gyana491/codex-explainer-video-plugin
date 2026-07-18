@@ -14,7 +14,13 @@ export const ExplainerVideo: React.FC<{project: ExplainerProject}> = ({project})
         startFrame += durationInFrames;
         return (
           <Sequence key={scene.id} from={from} durationInFrames={durationInFrames} premountFor={project.fps}>
-            <Scene scene={scene} durationInFrames={durationInFrames} fps={project.fps} />
+            <Scene
+              scene={scene}
+              durationInFrames={durationInFrames}
+              fps={project.fps}
+              width={project.width}
+              height={project.height}
+            />
           </Sequence>
         );
       })}
@@ -22,10 +28,12 @@ export const ExplainerVideo: React.FC<{project: ExplainerProject}> = ({project})
   );
 };
 
-const Scene: React.FC<{scene: ExplainerScene; durationInFrames: number; fps: number}> = ({
+const Scene: React.FC<{scene: ExplainerScene; durationInFrames: number; fps: number; width: number; height: number}> = ({
   scene,
   durationInFrames,
   fps,
+  width,
+  height,
 }) => {
   const frame = useCurrentFrame();
   const progress = frame / Math.max(1, durationInFrames - 1);
@@ -46,7 +54,16 @@ const Scene: React.FC<{scene: ExplainerScene; durationInFrames: number; fps: num
           transform: `translateX(${translateX}%) scale(${scale})`,
         }}
       />
-      <OverlayRenderer overlay={scene.overlay} frame={frame} sceneFrames={durationInFrames} fps={fps} />
+      <OverlayRenderer
+        overlay={scene.overlay}
+        objects={scene.objects}
+        frame={frame}
+        sceneFrames={durationInFrames}
+        fps={fps}
+        width={width}
+        height={height}
+        artworkTransform={`translateX(${translateX}%) scale(${scale})`}
+      />
     </AbsoluteFill>
   );
 };

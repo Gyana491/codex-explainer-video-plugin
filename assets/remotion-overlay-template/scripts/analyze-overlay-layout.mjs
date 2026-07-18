@@ -127,9 +127,10 @@ function analyzeProject(project, projectPath, publicDir, options) {
     }
 
     const saliency = loadSaliency(imagePath, sampleWidth, sampleHeight);
-    const elements = collectElements(scene, width, height);
-    const textElements = elements.filter((element) => element.kind === "text");
+    sceneReport.saliencyMode = saliency.mode;
     const layoutObjects = collectLayoutObjects(scene);
+    const elements = collectElements(scene, width, height, layoutObjects);
+    const textElements = elements.filter((element) => element.kind === "text");
     const context = {
       scene,
       sceneId: sceneReport.id,
@@ -150,6 +151,8 @@ function analyzeProject(project, projectPath, publicDir, options) {
         id: element.id,
         kind: element.kind,
         role: element.role,
+        groupId: element.groupId ?? null,
+        position: element.position ? roundPoint(element.position) : null,
         bbox: roundBox(element.bbox),
         saliency: roundMetrics(metrics),
         suggestions,
@@ -190,19 +193,41 @@ function analyzeProject(project, projectPath, publicDir, options) {
 
 function applyMoves(project, report, options) {
   const moves = [];
+  const movedGroups = new Set();
   const scenesById = new Map((project.scenes ?? []).map((scene) => [scene.id, scene]));
   for (const sceneReport of report.scenes ?? []) {
     const scene = scenesById.get(sceneReport.id);
     if (!scene?.overlay?.essentialText) continue;
     const textsById = new Map(scene.overlay.essentialText.map((text) => [text.id, text]));
+    const groupsById = new Map((scene.overlay.groups ?? []).map((group) => [group.id, group]));
     for (const elementReport of sceneReport.elements ?? []) {
       const move = elementReport.recommendedMove;
       if (!move) continue;
       const text = textsById.get(elementReport.id);
       if (!text) continue;
       const finding = (sceneReport.findings ?? []).find((item) => item.elementId === text.id);
-      const autoPlace = text.intent?.autoPlace === true || options.applyAll;
+      const group = elementReport.groupId ? groupsById.get(elementReport.groupId) : null;
+      const autoPlace = text.intent?.autoPlace === true || Boolean(group?.anchorTo) || options.applyAll;
       if (!finding && !autoPlace) continue;
+      if (group) {
+        const moveKey = `${scene.id}:${group.id}`;
+        if (movedGroups.has(moveKey)) continue;
+        const current = elementReport.position ?? {x: text.x, y: text.y};
+        const deltaX = move.x - current.x;
+        const deltaY = move.y - current.y;
+        group.offsetX = round((group.offsetX ?? 0) + deltaX);
+        group.offsetY = round((group.offsetY ?? 0) + deltaY);
+        movedGroups.add(moveKey);
+        moves.push({
+          sceneId: scene.id,
+          groupId: group.id,
+          elementId: text.id,
+          from: current,
+          to: {x: move.x, y: move.y},
+          reason: finding?.kind ?? "group-layout-intent",
+        });
+        continue;
+      }
       moves.push({
         sceneId: scene.id,
         elementId: text.id,
@@ -218,6 +243,20 @@ function applyMoves(project, report, options) {
 }
 
 function loadSaliency(imagePath, sampleWidth, sampleHeight) {
+  if (path.extname(imagePath).toLowerCase() === ".svg") {
+    return {
+      mode: "vector-skipped",
+      width: sampleWidth,
+      height: sampleHeight,
+      query(bbox) {
+        const x1 = clamp(Math.floor(bbox.x1 * sampleWidth), 0, sampleWidth - 1);
+        const y1 = clamp(Math.floor(bbox.y1 * sampleHeight), 0, sampleHeight - 1);
+        const x2 = clamp(Math.ceil(bbox.x2 * sampleWidth), x1 + 1, sampleWidth);
+        const y2 = clamp(Math.ceil(bbox.y2 * sampleHeight), y1 + 1, sampleHeight);
+        return {avg: 0, inkRatio: 0, area: (x2 - x1) * (y2 - y1)};
+      },
+    };
+  }
   const result = spawnSync("ffmpeg", [
     "-v",
     "error",
@@ -272,6 +311,7 @@ function loadSaliency(imagePath, sampleWidth, sampleHeight) {
   }
 
   return {
+    mode: "raster",
     width: sampleWidth,
     height: sampleHeight,
     query(bbox) {
@@ -295,7 +335,7 @@ function rectIntegral(integral, stride, x1, y1, x2, y2) {
   return integral[y2 * stride + x2] - integral[y1 * stride + x2] - integral[y2 * stride + x1] + integral[y1 * stride + x1];
 }
 
-function collectElements(scene, width, height) {
+function collectElements(scene, width, height, layoutObjects) {
   const overlay = scene.overlay ?? {};
   const elements = [];
   for (const text of overlay.essentialText ?? []) {
@@ -307,7 +347,10 @@ function collectElements(scene, width, height) {
       align: text.align ?? "center",
       maxWidth: text.maxWidth ?? 0.26,
       intent: text.intent ?? {},
+      groupId: text.groupId,
+      coordinateSpace: text.coordinateSpace ?? "screen",
       source: text,
+      position: {x: text.x, y: text.y},
       bbox: textBox(text),
     });
   }
@@ -317,9 +360,50 @@ function collectElements(scene, width, height) {
       kind: "shape",
       role: shape.type,
       intent: shape.intent ?? {},
+      groupId: shape.groupId,
+      coordinateSpace: shape.coordinateSpace ?? "screen",
       source: shape,
+      position: {x: shape.x, y: shape.y},
       bbox: shapeBox(shape, width, height),
     });
+  }
+  for (const asset of overlay.assets ?? []) {
+    elements.push({
+      id: asset.id,
+      kind: "asset",
+      role: "asset",
+      intent: asset.intent ?? {},
+      groupId: asset.groupId,
+      coordinateSpace: asset.coordinateSpace ?? "screen",
+      source: asset,
+      position: {x: asset.x, y: asset.y},
+      bbox: assetBox(asset),
+    });
+  }
+  return resolveElementGroups(overlay, elements, layoutObjects);
+}
+
+function resolveElementGroups(overlay, elements, layoutObjects) {
+  const elementBoxes = new Map(elements.map((element) => [element.id, element.bbox]));
+  const objectBoxes = new Map(layoutObjects.map((object) => [object.id, object.bbox]));
+  for (const group of overlay.groups ?? []) {
+    const members = elements.filter((element) => element.groupId === group.id);
+    if (members.length === 0) continue;
+    const bounds = group.bbox ? normalizeBox({x1: group.bbox[0], y1: group.bbox[1], x2: group.bbox[2], y2: group.bbox[3]}) : unionBoxes(members.map((member) => member.bbox));
+    const target = group.anchorTo ? objectBoxes.get(group.anchorTo) ?? elementBoxes.get(group.anchorTo) : null;
+    const anchored = bounds && target ? groupPlacementOffset(bounds, target, group.placement ?? "near") : {dx: 0, dy: 0};
+    const dx = anchored.dx + (group.offsetX ?? 0);
+    const dy = anchored.dy + (group.offsetY ?? 0);
+    for (const member of members) {
+      member.bbox = translateBox(member.bbox, dx, dy);
+      member.position = {x: member.position.x + dx, y: member.position.y + dy};
+      member.coordinateSpace = member.source.coordinateSpace ?? group.coordinateSpace ?? (group.anchorTo ? "artwork" : "screen");
+      member.intent = {
+        ...member.intent,
+        target: member.intent.target ?? group.anchorTo,
+        placement: member.intent.placement ?? group.placement,
+      };
+    }
   }
   return elements;
 }
@@ -390,6 +474,54 @@ function shapeBox(shape, projectWidth, projectHeight) {
     x2: shape.x + width / 2 + pad,
     y2: shape.y + height / 2 + pad,
   });
+}
+
+function assetBox(asset) {
+  return normalizeBox({
+    x1: asset.x - asset.width / 2,
+    y1: asset.y - asset.height / 2,
+    x2: asset.x + asset.width / 2,
+    y2: asset.y + asset.height / 2,
+  });
+}
+
+function unionBoxes(boxes) {
+  if (boxes.length === 0) return null;
+  return boxes.reduce((result, box) => ({
+    x1: Math.min(result.x1, box.x1),
+    y1: Math.min(result.y1, box.y1),
+    x2: Math.max(result.x2, box.x2),
+    y2: Math.max(result.y2, box.y2),
+  }));
+}
+
+function groupPlacementOffset(bounds, target, placement) {
+  const gap = 0.035;
+  const width = bounds.x2 - bounds.x1;
+  const height = bounds.y2 - bounds.y1;
+  const current = boxCenter(bounds);
+  const targetCenter = boxCenter(target);
+  const candidates = {
+    above: {x: targetCenter.x, y: target.y1 - gap - height / 2},
+    below: {x: targetCenter.x, y: target.y2 + gap + height / 2},
+    left: {x: target.x1 - gap - width / 2, y: targetCenter.y},
+    right: {x: target.x2 + gap + width / 2, y: targetCenter.y},
+    inside: targetCenter,
+    "top-left": {x: target.x1 + width / 2, y: target.y1 - gap - height / 2},
+    "top-right": {x: target.x2 - width / 2, y: target.y1 - gap - height / 2},
+    "bottom-left": {x: target.x1 + width / 2, y: target.y2 + gap + height / 2},
+    "bottom-right": {x: target.x2 - width / 2, y: target.y2 + gap + height / 2},
+  };
+  const desired = placement === "near"
+    ? [candidates.above, candidates.below, candidates.left, candidates.right].sort(
+        (a, b) => Math.hypot(a.x - current.x, a.y - current.y) - Math.hypot(b.x - current.x, b.y - current.y),
+      )[0]
+    : candidates[placement] ?? candidates.right;
+  return {dx: desired.x - current.x, dy: desired.y - current.y};
+}
+
+function translateBox(box, dx, dy) {
+  return {x1: box.x1 + dx, y1: box.y1 + dy, x2: box.x2 + dx, y2: box.y2 + dy};
 }
 
 function classifyElement(sceneId, element, metrics, options) {
@@ -547,6 +679,8 @@ function objectOverlapPenalty(bbox, element, context) {
   let penalty = 0;
   for (const object of context.layoutObjects) {
     const explicitlyAvoided = avoidList.has(object.id) || avoidList.has(object.type);
+    const isTarget = element.intent?.target === object.id || element.intent?.target === object.type;
+    if (isTarget && !explicitlyAvoided) continue;
     if (!object.avoid && !explicitlyAvoided) continue;
     const ratio = intersectionRatio(bbox, object.bbox);
     if (ratio <= 0) continue;
@@ -624,10 +758,12 @@ function intersectionRatio(a, b) {
 function summarize(project, scenes, findings) {
   const textCount = scenes.reduce((total, scene) => total + scene.elements.filter((element) => element.kind === "text").length, 0);
   const shapeCount = scenes.reduce((total, scene) => total + scene.elements.filter((element) => element.kind === "shape").length, 0);
+  const assetCount = scenes.reduce((total, scene) => total + scene.elements.filter((element) => element.kind === "asset").length, 0);
   return {
     scenes: project.scenes?.length ?? 0,
     textElements: textCount,
     shapeElements: shapeCount,
+    assetElements: assetCount,
     errors: findings.filter((finding) => finding.severity === "error").length,
     warnings: findings.filter((finding) => finding.severity === "warning").length,
   };
@@ -635,7 +771,7 @@ function summarize(project, scenes, findings) {
 
 function printReport(report) {
   const {summary} = report;
-  console.log(`Overlay layout analysis: ${summary.scenes} scenes, ${summary.textElements} text elements, ${summary.shapeElements} shapes`);
+  console.log(`Overlay layout analysis: ${summary.scenes} scenes, ${summary.textElements} text elements, ${summary.shapeElements} shapes, ${summary.assetElements} assets`);
   console.log(`Findings: ${summary.errors} errors, ${summary.warnings} warnings`);
   for (const finding of report.findings) {
     const prefix = finding.severity === "error" ? "ERROR" : "WARN";
@@ -664,6 +800,14 @@ function roundBox(box) {
     x2: Number(box.x2.toFixed(3)),
     y2: Number(box.y2.toFixed(3)),
   };
+}
+
+function roundPoint(point) {
+  return {x: round(point.x), y: round(point.y)};
+}
+
+function round(value) {
+  return Number(value.toFixed(3));
 }
 
 function normalizeBox(box) {
