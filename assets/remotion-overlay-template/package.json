@@ -1,0 +1,26 @@
+{
+  "name": "explainer-overlay-render",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "preflight": "node scripts/preflight.mjs",
+    "layout-check": "node scripts/analyze-overlay-layout.mjs src/project.json",
+    "layout-fix": "node scripts/analyze-overlay-layout.mjs src/project.json --apply --json output/layout-report.json",
+    "layout-stills": "node scripts/render-layout-stills.mjs",
+    "prerender": "npm run preflight",
+    "render": "npm run render:remotion && npm run finalize",
+    "render:remotion": "remotion render src/index.ts ExplainerVideo output/explainer-video-remotion.mp4",
+    "finalize": "node scripts/finalize-render.mjs",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.342",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "remotion": "^4.0.342"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "typescript": "^5.7.2"
+  }
+}

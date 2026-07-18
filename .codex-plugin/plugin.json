@@ -1,7 +1,7 @@
 {
   "name": "codex-explainer-video-plugin",
-  "version": "1.0.0+codex.20260715232121",
-  "description": "Create storyboard-based explainer videos using Codex image generation, Real-ESRGAN upscaling, OpenAI voiceover, and local FFmpeg composition.",
+  "version": "1.0.0+codex.20260716010209",
+  "description": "Create storyboard-based explainer videos using Codex image generation, Real-ESRGAN upscaling, OpenAI voiceover, Remotion shape animation, essential text overlays, and local FFmpeg composition.",
   "author": {
     "name": "Gyana Ranjan Mohanta"
   },
@@ -12,14 +12,16 @@
     "image-generation",
     "voiceover",
     "upscaling",
-    "ffmpeg"
+    "ffmpeg",
+    "remotion",
+    "motion-graphics"
   ],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Codex Explainer Video Plugin",
-    "shortDescription": "Generate dynamic 4-8 minute storyboard explainers",
-    "longDescription": "Creates pixel-verified 4:3 landscape master storyboards with deterministically composited, crop-ready 16:9 landscape scene and blank slots, then renders narration-timed scenes with OpenAI TTS and FFmpeg.",
+    "shortDescription": "Generate story-driven explainers with animated overlays",
+    "longDescription": "Creates pixel-verified 4:3 master storyboards with exact 16:9 scenes, then combines locked OpenAI voiceover, word-focused captions, editable Remotion shape and text overlays, and FFmpeg delivery.",
     "developerName": "Gyana Ranjan Mohanta",
     "category": "Productivity",
     "capabilities": [
@@ -29,7 +31,8 @@
     "defaultPrompt": [
       "Create a 4-minute explainer video from this topic with frequent visual changes.",
       "Turn this script into a 4-8 minute storyboard video with voiceover.",
-      "Generate one pixel-verified 4:3 landscape master storyboard whose populated and blank slots are deterministically enforced as exact 16:9 landscape frames."
+      "Generate one pixel-verified 4:3 landscape master storyboard whose populated and blank slots are deterministically enforced as exact 16:9 landscape frames.",
+      "Explain this topic with animated diagrams and only necessary on-screen text."
     ],
     "brandColor": "#111827"
   }

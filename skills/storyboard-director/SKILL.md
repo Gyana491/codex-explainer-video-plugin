@@ -1,11 +1,11 @@
 ---
 name: storyboard-director
-description: Extract a source's essence and design a truthful causal story with an audience proxy, goal, stakes, obstacle, turning point, payoff, emotional progression, and visual callbacks. Produce clear narration, audio-derived timing, and a master storyboard prompt with 5-6 professional hand-drawn whiteboard slides per minute, distinct compositions, exact handwritten titles and labels, orange emphasis, and word-focused captions. Use for source-to-explainer planning, voiceover-synchronized slide and caption timestamps, or when a user wants slides, visual prompts, and timing without immediately rendering the final video.
+description: Extract a source's essence and design a truthful causal story with an audience proxy, goal, stakes, obstacle, turning point, payoff, emotional progression, and visual callbacks. Produce audio-aware timing, a pixel-verified master storyboard, word-focused captions, and deterministic Remotion plans for essential text, shapes, charts, diagrams, equations, and reveal cues. Use for source-to-explainer planning or when the user wants production-ready slides, visual prompts, motion graphics, and timing without immediately rendering the final video.
 ---
 
 # Storyboard director
 
-Create a production-ready storyboard package.
+Create a production-ready storyboard package. Read [the overlay contract](../../references/overlay-storyboard.md) whenever any scene needs exact text, shapes, charts, diagrams, or equations.
 
 Return or save structured JSON with:
 
@@ -32,9 +32,10 @@ Return or save structured JSON with:
 - average_scene_duration_seconds
 - theme_bible
 - master_prompt
+- overlay_contract
 - scenes
 
-Each scene must include:
+For every scene, provide:
 
 - scene_number
 - start_seconds
@@ -61,8 +62,11 @@ Each scene must include:
 - layout
 - caption_safe_area
 - reveal_beats
+- overlay_strategy
+- overlay_elements
+- animation_cues
 
-Rules:
+## Direction rules
 
 - Read the complete source or input before outlining. Distill it into `source_essence` with `central_question`, `one_sentence_idea`, `audience`, `why_it_matters`, 3-5 `must_understand_points`, `supporting_evidence_or_examples`, `likely_misconception`, and `final_takeaway`. Point `source_essence_file` to `output/source-essence.json`.
 - Preserve the source's meaning, evidence, qualifications, and causal relationships rather than its original structure or wording. Remove tangents, repetition, and detail that does not change audience understanding.
@@ -112,15 +116,20 @@ Rules:
 - Do not copy the reference's exact composition, characters, objects, wording, typeface, palette, or decorative placements. Vary slide layouts and visual metaphors while preserving the original theme bible.
 - Avoid photorealism, 3D rendering, glossy UI, gradients, saturated extra colors, stock imagery, dense scenery, messy marker scribbles, comic panels, and heavy soft shadows.
 - Describe subjects, composition, background, lighting, and emotional purpose.
-- Make every final slide presentation-complete and understandable without narration: one `clear_idea`, a concise handwritten title, only the labels and short annotations needed for that idea, at least one named recurring story character, and a visual explanation using the most appropriate arrows, paths, diagrams, process flows, charts, text, and objects.
+- Make every final composited slide presentation-complete and understandable without narration: one `clear_idea`, a concise handwritten-style overlay title, only the labels and short annotations needed for that idea, at least one named recurring story character, and a visual explanation using the most appropriate arrows, paths, diagrams, process flows, charts, text, and objects.
 - Structure `on_slide_text` as `title`, `object_labels`, `important_phrase`, `supporting_notes`, and `emphasis_marks`. For every object label record its target and whether it requires a thin pointer line.
 - Keep text concise and exact: title at most 7 words, labels 1-4 words, notes at most 6 words, and no more than 24 supporting words total. Do not use narration as a paragraph on the slide.
 - Place the title in an empty area, usually top-left. Place labels next to their objects and use thin hand-drawn pointer lines only when necessary.
 - Keep text and important subjects inside safe margins. Never place text over faces, hands, screens, detailed illustrations, panel dividers, or borders. Maintain generous whitespace around every text block.
 - Use visual hierarchy that communicates the idea within two seconds: title first, main visual path second, orange outcome or important phrase third, supporting notes last.
 - Use orange only for important words, arrows, outcomes, underlines, highlights, and occasional circles, boxes, or stars. Keep ordinary text black and avoid overcrowding.
-- Ask image generation to include only the exact specified handwritten copy. After panel extraction, verify and deterministically correct or replace malformed lettering so every final slide contains accurate text directly inside the composition.
+- Ask image generation to reserve the declared overlay zones and avoid essential lettering. Render exact copy, data, equations, and diagram relationships deterministically after panel extraction.
 - Define a `caption_safe_area` for every slide, normally near the title-safe lower edge and free of faces, essential diagram details, and small on-slide text.
+- Choose one `overlay_strategy` per slide: `artwork-only`, `kinetic-text`, `diagram`, `chart`, `equation`, or `artwork-with-overlays`.
+- Use generated panels for atmosphere, characters, settings, and illustrative objects. Put exact titles, labels, numbers, equations, chart values, citations, and factual relationships in `overlay_elements`.
+- Give every overlay element and animation cue a stable ID and normalized geometry. Keep essential text to 1-6 words per element where possible and no more than two simultaneous text blocks excluding captions.
+- Plan no more than five animation cues per slide unless more are necessary for comprehension. Preserve a narration `triggerPhrase`, provisional `start_seconds`, and deterministic scene-relative `startProgress` for every cue.
+- Set `overlay_contract` to `references/overlay-storyboard.md` and require the final overlay project to pass `scripts/validate-overlay-storyboard.mjs` before rendering.
 - Generate exactly one master storyboard containing every scene.
 - Permit exactly one built-in image-generation call for the entire storyboard. Put all scenes and the complete hard layout contract into that single prompt. Never make a second image-generation call to correct geometry, wording, composition, or missing content.
 - Treat the image generator's contact sheet as a draft only. Never accept, publish, split for final rendering, or call it the master merely because its borders look close to 16:9.
@@ -135,7 +144,7 @@ Rules:
 - Include one `master_prompt` that follows the contract below and substitutes exact values. Repeat the canvas ratio, panel ratio, counts, dimensions, padding, and gutters because panel geometry is a hard requirement, not an artistic suggestion.
 - Keep all important subjects and action inside each panel's 16:9 safe area.
 - Verify that each accepted panel's pixel dimensions satisfy the exact integer equality `width * 9 == height * 16`, with no tolerance or rounding exception. Regenerate malformed artwork instead of stretching it or weakening the check.
-- Prevent crop loss in the one prompt by requiring generous internal safe margins around all text, characters, and diagrams. If local center-cropping is needed, use only the existing generated pixels; never request replacement artwork or a second generated image.
+- Prevent crop loss in the one prompt by requiring generous internal safe margins around characters, diagrams, and reserved overlay zones. If local center-cropping is needed, use only the existing generated pixels; never request replacement artwork or a second generated image.
 - Treat `aspect_ratio` as the final video ratio. When the final output is vertical, compose each 16:9 source panel so its important content also survives a centered 9:16 crop.
 
 ## Master storyboard prompt contract
@@ -150,13 +159,13 @@ HARD LAYOUT CONTRACT:
 - The complete outer canvas is exactly 4:3 landscape: {CANVAS_WIDTH}x{CANVAS_HEIGHT} pixels, satisfying width x 3 = height x 4.
 - Draw exactly {COLUMNS} columns by {ROWS} rows: {CELL_COUNT} equal panel positions total.
 - Every panel is an exact 16:9 landscape rectangle of {PANEL_WIDTH}x{PANEL_HEIGHT} pixels, satisfying width x 9 = height x 16. No square, portrait, merged, overlapping, stretched, or irregular panels.
-- Use {OUTER_PADDING}px outer padding and {GUTTER}px uniform gutters. Center the grid on the portrait canvas and leave any remaining outer canvas plain neutral.
+- Use {OUTER_PADDING}px outer padding and {GUTTER}px uniform gutters. Center the grid on the landscape canvas and leave any remaining outer canvas plain neutral.
 - Use identical panel dimensions, perfectly straight aligned boundaries, and thin uniform divider strokes inside the panel edges.
 - Place all {SCENE_COUNT} scenes in cells 1-{SCENE_COUNT}, read left-to-right and top-to-bottom.
 - Leave cells {FIRST_UNUSED}-{CELL_COUNT} plain neutral and empty. Do not invent extra scenes. [Omit this line when no cells are unused.]
 - Fit the complete grid inside the 4:3 landscape canvas. Nothing may extend beyond or be clipped by the outer image, and neutral padding must not be included in any scene crop.
 - Keep each scene visually self-contained and keep important subjects away from dividers.
-- Keep every title, label, character, and diagram well inside its panel's inner safe margin so an exact 16:9 center crop cannot remove required content.
+- Keep every character, diagram, and reserved overlay zone well inside its panel's inner safe margin so an exact 16:9 center crop cannot remove required content.
 - Show one composition per cell. Do not subdivide a cell into a collage, comic strip, or nested mini-panels.
 - This generated contact sheet is a visual draft. The production workflow will rebuild it with a deterministic pixel compositor; do not imply that visually approximate borders are final geometry.
 
@@ -165,7 +174,7 @@ VISUAL CONTINUITY:
 
 PRESENTATION STORYTELLING:
 - Treat every cell as one polished explainer-presentation slide containing exactly one clear idea that remains understandable without narration.
-- Use arrows, paths, diagrams, process flows, charts, handwritten text, characters, and objects as needed to make the idea visually self-explanatory.
+- Use characters and illustrative objects in the generated art, reserving arrows, paths, diagrams, charts, and handwritten-style text that carry exact information for deterministic overlays.
 - Every slide includes at least one named recurring story character and one explanatory visual.
 - Follow the declared narrative spine. Make every slide perform one story job and create the question, consequence, or discovery that motivates the next slide.
 - Establish the audience proxy, goal, and stakes early; make the midpoint turning point visibly change the audience's understanding; resolve the opening question in the payoff.
@@ -174,11 +183,11 @@ PRESENTATION STORYTELLING:
 - Show the complete base composition; timed reveals, highlights, and camera moves will be added during video rendering.
 - Do not add panel numbers, logos, watermarks, or unspecified text.
 
-COMPOSITION AND HANDWRITTEN TEXT CONTRACT:
-- Add the exact specified handwritten title, object labels, important phrase, and short supporting annotations directly inside every scene.
-- Put the largest handwritten scene title in an empty area, usually top-left.
-- Put smaller handwritten labels close to the objects they describe. Use thin hand-drawn pointer lines only when necessary.
-- Put small black handwritten supporting notes near the relevant visual evidence.
+COMPOSITION AND OVERLAY-SAFE TEXT CONTRACT:
+- Reserve clear regions for the specified overlay title, object labels, important phrase, and short supporting annotations.
+- Reserve the largest title area in empty space, usually top-left.
+- Leave room for smaller labels close to the objects they describe and thin pointer lines when necessary.
+- Leave room for small black supporting notes near the relevant visual evidence.
 - Use orange only for important words, arrows, outcomes, underlines, highlights, and occasional circles, boxes, or stars. Use black for ordinary text.
 - Keep all important objects and characters away from panel borders.
 - Never place text over faces, hands, screens, detailed illustrations, or dividers.
@@ -195,10 +204,10 @@ WHITEBOARD-INSPIRED VISUAL DIRECTION:
 - Use simple whiteboard metaphors and topic-specific diagrams instead of realistic environments.
 - No photorealism, 3D, glossy UI, gradients, saturated extra colors, stock imagery, dense scenery, messy marker scribbles, comic panels, or heavy soft shadows.
 
-For every numbered slide description, specify: story role, story beat, cause from previous, question opened or answered, setup or payoff, emotional shift, visual callback, one clear idea, voiceover idea, named character and action, unique composition signature, visual story map, exact handwritten title, object labels and targets, important phrase, supporting notes, orange emphasis marks, text layout, caption-safe area, and planned reveal beats. Reveal beats describe later animation and must not create nested panels in the base image.
+For every numbered slide description, specify: story role, story beat, cause from previous, question opened or answered, setup or payoff, emotional shift, visual callback, one clear idea, voiceover idea, named character and action, unique composition signature, visual story map, exact overlay title, object labels and targets, important phrase, supporting notes, orange emphasis marks, text layout, caption-safe area, overlay strategy, overlay elements, and planned reveal beats. Reveal beats describe later animation and must not create nested panels in the base image.
 
 SLIDES IN ROW-MAJOR ORDER:
 {NUMBERED_SCENE_DESCRIPTIONS}
 
-Final compliance check before output: exactly one 4:3 landscape image at {CANVAS_WIDTH}x{CANVAS_HEIGHT}, satisfying width x 3 = height x 4; {COLUMNS}x{ROWS} equal grid; {CELL_COUNT} panel positions; all {SCENE_COUNT} scenes; every individual panel exactly 16:9 at {PANEL_WIDTH}x{PANEL_HEIGHT}, satisfying width x 9 = height x 16; all requested scenes visible inside the canvas; every recorded crop excludes padding and gutters; every slide communicates one idea within two seconds; every slide has exact handwritten text and a distinct uncrowded composition; the sequence follows one causal narrative spine, reaches a genuine turning point, pays off every open loop and callback, is understandable without narration, and feels like a professional hand-drawn presentation created by a skilled visual storyteller.
+Final compliance check before output: exactly one 4:3 landscape image at {CANVAS_WIDTH}x{CANVAS_HEIGHT}, satisfying width x 3 = height x 4; {COLUMNS}x{ROWS} equal grid; {CELL_COUNT} panel positions; all {SCENE_COUNT} scenes; every individual panel exactly 16:9 at {PANEL_WIDTH}x{PANEL_HEIGHT}, satisfying width x 9 = height x 16; all requested scenes visible inside the canvas; every recorded crop excludes padding and gutters; every slide communicates one idea within two seconds; every slide reserves clear overlay-safe regions and has a distinct uncrowded composition; the sequence follows one causal narrative spine, reaches a genuine turning point, pays off every open loop and callback, and supports a professional final hand-drawn presentation after deterministic overlays are applied.
 ```

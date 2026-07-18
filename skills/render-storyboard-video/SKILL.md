@@ -1,11 +1,13 @@
 ---
 name: render-storyboard-video
-description: Render or resynchronize an existing storyboard and narration, including 5-6-slides-per-minute whiteboard presentations with handwritten scene text, orange emphasis, and word-focused captions. Split and finish storyboard scenes first, then generate one locked-voice clip per scene, measure and concatenate audio, create captions, and stitch a synchronized MP4 with FFmpeg. Use when a storyboard already exists, only composition is needed, or presentation visuals drift from the voiceover.
+description: Render or resynchronize an existing storyboard and narration as a story-driven whiteboard presentation with pixel-verified scenes, one locked-voice clip per scene, word-focused captions, and deterministic Remotion shape and essential-text overlays. Use when a storyboard already exists, only composition is needed, or presentation visuals drift from the voiceover.
 ---
 
 # Render storyboard video
 
-Use the configured `explainer-media` MCP server. Read `upscaledImageUrl` from `upscale_image` and `voiceoverUrl` from `generate_voiceover`.
+Use the configured `explainer-media` server. Read `upscaledImageUrl` from `upscale_image` and `voiceoverUrl` from `generate_voiceover`.
+
+Read [the overlay contract](../../references/overlay-storyboard.md) when the storyboard package contains overlays.
 
 1. Never make an additional image-generation call. Use the single supplied/generated contact sheet only. If it has no passing `output/storyboard-geometry.json`, treat it as a draft and run the bundled local `scripts/canonicalize_storyboard.py` after extracting its scene candidates. Preserve its artwork without visual filters, and accept only the locally composited exact-4:3 landscape master with exact-16:9 landscape populated and blank slots.
 2. Upscale the master before splitting unless it is already sufficiently large. Pass an HTTP(S) URL or complete base64 data URI to `upscale_image`; never pass a local path, `file://` URL, blob URL, or bare base64.
@@ -29,8 +31,36 @@ Use the configured `explainer-media` MCP server. Read `upscaledImageUrl` from `u
    - Force-align each clip against its exact narration, offset local word timestamps by cumulative scene start, and merge them into `output/word-timings.json`. Never divide scene duration uniformly across words.
    - Resolve storyboard reveal triggers from verified word timestamps. Group captions into 3-7-word phrases and write `output/captions.ass` with orange word-focused karaoke highlighting.
 8. Stitch the final video from `output/scene-timings.json`.
+   - Use FFmpeg pans, zooms, and crossfades for `artwork-only` scenes.
+   - Use the bundled Remotion template for kinetic text, diagrams, charts, equations, or artwork with overlays. Copy `../../assets/remotion-overlay-template` into the writable project, replace `src/project.json`, place panels under `public/scenes`, and place the joined narration under `public/audio`.
+   - Keep exact titles, labels, numbers, equations, chart values, and factual relationships in deterministic overlays. Treat generated lettering as non-authoritative artwork.
+   - Give every overlay element and animation cue a stable ID, normalized geometry, and either deterministic scene-relative `startProgress` or exact scene-relative `startSeconds`.
+   - Add tight `objects` boxes for generated illustration regions. Use anchored `groups` for callouts whose shape, label, connector, and value must move together; add `intent` metadata for ungrouped labels or values that should stay near a specific shape or object.
+   - Put titles and caption-like elements in `screen` coordinates. Put annotations and cutouts that must follow camera motion in `artwork` coordinates. Use explicit `zIndex` values and transparent assets under `public/overlays` when a diagram must pass behind a foreground illustration.
+   - Validate the project before rendering:
+
+     ```powershell
+     node ../../scripts/validate-overlay-storyboard.mjs <copied-template>/src/project.json
+     ```
+
+   - Run visual-aware layout QA before rendering:
+
+     ```powershell
+     node <copied-template>/scripts/analyze-overlay-layout.mjs <copied-template>/src/project.json --json <copied-template>/output/layout-report.json
+     ```
+
+     Fix reported collisions before spending time on the final Remotion render.
+     When text contains `intent.autoPlace: true` or belongs to an anchored group, run `npm run layout-fix` inside the copied template, then run `npm run layout-stills` to inspect the solved layout as still frames.
+
+   - In the copied template run `npm install`, `npm run preflight`, `npm run type-check`, and `npm run render`. On Windows ARM64, use x64 Node under Windows emulation because Remotion does not publish a native ARM64 compositor.
    - Set every image duration from its matching measured audio clip. Keep narration untouched and execute reveal beats at aligned timestamps.
    - Burn in the final captions, compensate for any `xfade` overlap, and ensure the last visual frame ends with the final audio sample.
    - Export H.264 MP4 with AAC audio, `yuv420p`, and `+faststart`.
-9. Validate the exact production order: generate or receive draft, upscale draft, extract scene candidates, deterministically canonicalize and verify the master and all slots, finish scenes, generate per-scene voiceovers, measure and concatenate audio, generate captions, stitch video. Also verify 5-6 slides per minute, one matching image/audio pair per scene, identical voice configuration, exact handwritten text, orange-only emphasis, unique readable compositions, aligned captions and reveal beats, and final video/audio duration difference of at most 50 ms. Confirm the story still preserves its audience proxy, goal, stakes, obstacle, turning point, payoff, emotional progression, open-loop closures, and purposeful visual callbacks after splitting and stitching.
+9. Validate the exact production order: generate or receive draft, upscale draft, extract scene candidates, deterministically canonicalize and verify the master and all slots, finish scenes, generate per-scene voiceovers, measure and concatenate audio, generate captions, render overlays, stitch video. Also verify 5-6 slides per minute, one matching image/audio pair per scene, identical voice configuration, exact overlay text, orange-only emphasis, unique readable compositions, aligned captions and reveal beats, safe overlay geometry, and final video/audio duration difference of at most 50 ms. Confirm the story still preserves its audience proxy, goal, stakes, obstacle, turning point, payoff, emotional progression, open-loop closures, and purposeful visual callbacks after splitting and stitching.
 10. When correcting one slide or clip, replace only the affected asset, rebuild downstream timing or captions when necessary, and preserve all unaffected work.
+
+## Text and timing rules
+
+- Keep essential text separate from optional subtitles; never display the full narration as a permanent text band.
+- Use verified word timings to resolve cues when available, but always store deterministic `startProgress` so rendering does not depend on an external timestamp service.
+- Keep overlay text concise—normally 1-6 words per element and no more than two simultaneous blocks excluding captions.

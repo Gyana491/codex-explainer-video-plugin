@@ -1,31 +1,27 @@
 ---
 name: create-explainer-video
-description: Create or resynchronize a complete storyboard-based explainer video from a topic, script, article, brief, or narration audio. Extract the source's essence and shape it into a truthful causal story with a goal, stakes, obstacle, turning point, payoff, emotional progression, and visual callbacks. Generate and split the complete storyboard first, then generate one voiceover per scene with a locked voice, create word-focused captions, and stitch the result. Build 5-6 professional hand-drawn whiteboard slides per minute with clear compositions, exact handwritten titles and labels, and orange emphasis. Use Codex built-in image generation, explainer-media upscaling and OpenAI voiceover, pydub and FFprobe for audio-derived scene and word timestamps, then local FFmpeg to animate, caption, and render. Do not use an external image-generation API.
+description: Create or resynchronize a complete storyboard-based explainer video from a topic, script, article, brief, or narration audio. Shape the source into a truthful causal story, build a pixel-verified storyboard, then combine locked OpenAI voiceover, word-focused captions, deterministic Remotion shape animation and essential text, and local FFmpeg delivery. Use for story-driven whiteboard explainers that need editable diagrams, charts, equations, labels, kinetic text, or other motion graphics. Do not use an external image-generation API or ElevenLabs.
 ---
 
 # Create an explainer video
 
-Produce the finished video in the user's current project workspace.
+Produce the finished video in the user's current writable workspace.
 
-## Fixed system boundaries
+## System boundaries
 
 - Generate images using Codex or ChatGPT's built-in image-generation capability.
 - Call built-in image generation exactly once for the complete storyboard. Never call it again for a retry, correction, replacement panel, geometry fix, text fix, or alternate.
 - Never call an external image-generation API.
 - Use the `explainer-media.upscale_image` MCP tool for image upscaling.
-- Use the `explainer-media.generate_voiceover` MCP tool for narration.
-- Use local Python with `pydub`, FFprobe, and FFmpeg for audio analysis, cropping, scene extraction, animation, audio mixing, subtitles, and rendering.
+- Use the `explainer-media.generate_voiceover` MCP tool for narration; do not use ElevenLabs.
+- Use the bundled Remotion template for deterministic text, diagrams, charts, equations, and shape overlays.
+- Use local Python with `pydub`, FFprobe, and FFmpeg for audio analysis, cropping, scene extraction, audio mixing, subtitles, final encoding, and validation.
 - Treat measured audio timestamps as the visual timeline. Never assign every image a programmed fixed duration.
 - Do not restart the entire workflow when only one asset or scene needs correction.
 
-## Explainer Media MCP contract
+Read [the overlay storyboard contract](../../references/overlay-storyboard.md) before planning scenes that need exact information.
 
-- Use only the configured `explainer-media` server at the plugin-provided endpoint.
-- Read `upscaledImageUrl` from a successful `upscale_image` result.
-- Read `voiceoverUrl` from a successful `generate_voiceover` result.
-- Treat `isError: true` or `success: false` as a failed generation. Report the returned error and preserve completed assets.
-
-## Default workflow
+## Workflow
 
 1. Inspect the request and choose:
    - duration in seconds or minutes, targeting 4-8 minutes (240-480 seconds),
@@ -109,14 +105,14 @@ Produce the finished video in the user's current project workspace.
    - Keep important subjects and action inside each panel's 16:9 safe area.
    - For vertical output, also keep important content safe for a centered 9:16 crop from each 16:9 panel.
    - Use the default whiteboard-inspired direction unless the user explicitly requests another visual style. Derive an original theme from the story, then repeat its chosen background, line-art, texture, accent, typography, shape, and recurring-character anchors in every slide description.
-   - Make each final slide presentation-complete and understandable without narration: one clear idea, a concise handwritten title, only the labels and short annotations needed for that idea, at least one named recurring story character, and a visual explanation using the most appropriate arrows, paths, diagrams, process flows, charts, text, and objects.
+   - Make each final composited slide presentation-complete and understandable without narration: one clear idea, a concise handwritten-style overlay title, only the labels and short annotations needed for that idea, at least one named recurring story character, and a visual explanation using the most appropriate arrows, paths, diagrams, process flows, charts, text, and objects.
    - Structure `on_slide_text` as `title`, `object_labels`, `important_phrase`, `supporting_notes`, and `emphasis_marks`. For each object label record its target object and whether it needs a thin pointer line.
    - Keep copy concise and exact: prefer a title of at most 7 words, labels of 1-4 words, notes of at most 6 words, and no more than 24 supporting words total. Never invent extra copy or use narration as a paragraph on the slide.
    - Place the title in a clean empty area, usually top-left. Place labels close to their objects and connect them with thin hand-drawn pointer lines only when proximity is insufficient.
    - Keep text and important objects inside safe margins. Never place text over faces, hands, screens, detailed illustrations, or panel borders. Maintain generous whitespace around every text block.
    - Use visual hierarchy that reveals the idea within two seconds: title first, main visual path second, orange outcome or key phrase third, supporting notes last.
    - Use orange only for important words, arrows, outcomes, underlines, highlights, and occasional circles, boxes, or stars. Keep ordinary text black.
-   - Ask image generation to include only the exact specified handwritten copy. After splitting, verify and deterministically correct or replace any malformed lettering so every final scene contains accurate text directly inside the composition.
+   - Ask image generation to reserve the declared text and overlay zones and avoid essential lettering. Render exact copy deterministically after splitting so every final composited scene contains accurate text.
    - Request the highest available exact 4:3 landscape resolution. Dense grids produce small panels, so always upscale the master before splitting it.
    - Inspect the draft for complete scene content, correct order, and separable panel regions. Reject a draft with missing, merged, duplicated, or clipped scenes. Approximate draft borders are not accepted as geometry; the compositor replaces them.
    - This inspection is only a draft-content check. Never declare the generated image final based on appearance; image-generation prompts cannot prove exact panel geometry.
@@ -153,13 +149,13 @@ Produce the finished video in the user's current project workspace.
    - Preserve open-loop setup and payoff order. Do not reveal an answer before its setup or leave a promised question unresolved.
    - Reserve a title-safe caption area near the lower edge without faces, essential diagram details, or small on-slide text. Allow an alternate safe position only when the composition requires it.
    - Show the complete base composition for each slide. Timed progressive reveals, highlights, and camera moves will be added during video rendering.
-   - Do not add panel numbers, logos, watermarks, or unspecified text.
+   - Do not add panel numbers, logos, watermarks, or essential text. Leave the specified overlay zones visually clear.
 
-   COMPOSITION AND HANDWRITTEN TEXT CONTRACT:
-   - Add the exact specified handwritten title, object labels, important phrase, and short supporting annotations directly inside every scene.
-   - Put the largest handwritten scene title in an empty area, usually top-left.
-   - Put smaller handwritten labels close to the objects they describe. Use thin hand-drawn pointer lines only when necessary.
-   - Put small black handwritten supporting notes near the relevant visual evidence.
+   COMPOSITION AND OVERLAY-SAFE TEXT CONTRACT:
+   - Reserve clear regions for the exact handwritten-style overlay title, object labels, important phrase, and short supporting annotations declared for every scene.
+   - Reserve the largest title area in empty space, usually top-left.
+   - Leave room for smaller labels close to the objects they describe and for thin pointer lines when necessary.
+   - Leave room for small black supporting notes near the relevant visual evidence.
    - Use orange only for important words, arrows, outcomes, underlines, highlights, and occasional circles, boxes, or stars. Use black for ordinary text.
    - Keep all important objects and characters away from panel borders.
    - Never place text over faces, hands, screens, detailed illustrations, or dividers.
@@ -176,12 +172,12 @@ Produce the finished video in the user's current project workspace.
    - Use simple whiteboard metaphors and topic-specific diagrams instead of realistic environments.
    - No photorealism, 3D, glossy UI, gradients, saturated extra colors, stock imagery, dense scenery, messy marker scribbles, comic panels, or heavy soft shadows.
 
-   For every numbered slide description, specify: story role, story beat, cause from previous, question opened or answered, setup or payoff, emotional shift, visual callback, one clear idea, voiceover idea, named character and action, unique composition signature, visual story map, exact handwritten title, object labels and targets, important phrase, supporting notes, orange emphasis marks, text layout, caption-safe area, and planned reveal beats. Reveal beats describe later animation and must not create nested panels in the base image.
+   For every numbered slide description, specify: story role, story beat, cause from previous, question opened or answered, setup or payoff, emotional shift, visual callback, one clear idea, voiceover idea, named character and action, unique composition signature, visual story map, exact overlay title, object labels and targets, important phrase, supporting notes, orange emphasis marks, text layout, caption-safe area, overlay strategy, and planned reveal beats. Reveal beats describe later animation and must not create nested panels in the base image.
 
    SLIDES IN ROW-MAJOR ORDER:
    {NUMBERED_SCENE_DESCRIPTIONS}
 
-   Final compliance check: exactly one 4:3 landscape image at {CANVAS_WIDTH}x{CANVAS_HEIGHT}, satisfying width x 3 = height x 4; {COLUMNS}x{ROWS} equal grid; {CELL_COUNT} panel positions; all {SCENE_COUNT} requested scenes; every panel exact 16:9 at {PANEL_WIDTH}x{PANEL_HEIGHT}, satisfying width x 9 = height x 16; all scenes fully inside the canvas; no crop includes padding or gutters; every slide communicates one idea within two seconds; every slide has exact handwritten text and a distinct uncrowded composition; the sequence follows one causal narrative spine, reaches a genuine turning point, pays off every open loop and visual callback, is understandable without narration, and feels like a professional hand-drawn presentation created by a skilled visual storyteller.
+   Final compliance check: exactly one 4:3 landscape image at {CANVAS_WIDTH}x{CANVAS_HEIGHT}, satisfying width x 3 = height x 4; {COLUMNS}x{ROWS} equal grid; {CELL_COUNT} panel positions; all {SCENE_COUNT} requested scenes; every panel exact 16:9 at {PANEL_WIDTH}x{PANEL_HEIGHT}, satisfying width x 9 = height x 16; all scenes fully inside the canvas; no crop includes padding or gutters; every slide communicates one idea within two seconds; every slide reserves clear overlay-safe text regions and has a distinct uncrowded composition; the sequence follows one causal narrative spine, reaches a genuine turning point, pays off every open loop and visual callback, and supports a professional final hand-drawn presentation after deterministic overlays are applied.
    ```
 
 5. Call `upscale_image` for the draft storyboard.
@@ -202,7 +198,7 @@ Produce the finished video in the user's current project workspace.
    - Treat `assets/storyboard/storyboard-upscaled.png` as the only accepted master. Never use the generated draft as the final master.
    - Copy each populated slot's exact `x`, `y`, `width`, and `height` from `output/storyboard-geometry.json` into the matching scene's `crop_panel` field.
    - Require every unused blank slot to have the identical `width`, `height`, and border geometry as populated scene slots. Do not export blank slots as scenes.
-   - Use the exact recorded `crop_panel` pixel rectangle for each final scene. Do not divide the full portrait canvas into equal cells because that would include outer padding or gutters.
+   - Use the exact recorded `crop_panel` pixel rectangle for each final scene. Do not divide the full landscape canvas into equal cells because that would include outer padding or gutters.
    - Do not use OCR unless unavoidable.
    - Crop every scene to exact 16:9 dimensions and require the integer equality `width * 9 == height * 16` before rendering. No tolerance, approximate ratio, or one-pixel exception is allowed.
    - Ignore the declared trailing unused cells and verify the number of exported scene files equals `scene_count`.
@@ -211,12 +207,15 @@ Produce the finished video in the user's current project workspace.
      `assets/scenes/scene-01.png`, `scene-02.png`, and so on.
 
 7a. Finish each scene as a presentation slide.
-   - Verify every generated handwritten title, label, and annotation against structured `on_slide_text`; correct or replace malformed lettering after splitting so spelling is deterministic.
-   - Use one professional handwritten typography system across all slides: largest title, smaller object labels, small black supporting notes, and orange treatment for the important phrase.
+   - Treat generated lettering as non-authoritative artwork. Put exact titles, labels, numbers, equations, chart values, and factual relationships in structured `on_slide_text` and deterministic overlays rather than relying on image-generated text.
+   - Use one professional handwritten overlay typography system across all slides: largest title, smaller object labels, small black supporting notes, and orange treatment for the important phrase.
    - Draw thin pointer lines from labels to targets only when necessary. Use occasional hand-drawn circles, boxes, stars, and underlines for emphasis.
    - Keep text inside title-safe margins and verify legibility at the final output resolution.
    - Keep text away from faces, hands, screens, detailed illustrations, and the karaoke caption-safe area. Preserve generous whitespace and remove any nonessential note that creates crowding.
-   - Preserve editable or reproducible text-overlay instructions in `output/storyboard.json`; never leave unverified generated lettering in the final video.
+   - For each scene choose `artwork-only`, `kinetic-text`, `diagram`, `chart`, `equation`, or `artwork-with-overlays`. Give every text, shape, asset, group, and cue a stable ID and normalized geometry.
+   - Add tight `objects` boxes for faces, hands, screens, detailed illustration regions, major recurring objects, and caption-safe areas. Use anchored `groups` when a label, value, card, and connector must remain together. Add `intent` metadata to ungrouped elements that should stay attached to a shape or generated object.
+   - Use `screen` coordinates for fixed titles and `artwork` coordinates for annotations that follow pan or zoom. Use transparent foreground cutouts plus explicit `zIndex` values when an overlay must pass behind an illustrated character or object.
+   - Preserve editable overlay instructions in `output/storyboard.json`; never leave unverified generated lettering as the only source of essential information.
 
 8. Generate one voiceover file separately for every finished scene.
    - Do not begin voice generation until the master storyboard is generated, upscaled, split, and every scene image is verified.
@@ -247,8 +246,27 @@ Produce the finished video in the user's current project workspace.
    - Group words into natural phrases of roughly 3-7 words, no more than two lines, without crossing scene boundaries or awkward grammatical breaks.
    - Resolve every planned reveal beat's trigger phrase to an exact timestamp from `output/word-timings.json`, then update `output/storyboard.json`.
    - Write `output/captions.ass` with word-level karaoke timing so the currently spoken word can be emphasized independently while the surrounding phrase remains visible.
+   - Convert each planned overlay trigger into an exact resolved timestamp. Store it as scene-relative `startSeconds` when known, otherwise use deterministic `startProgress`; preserve the trigger phrase as alignment metadata.
 
-11. Build the video with FFmpeg from `output/scene-timings.json`.
+11. Build the video from `output/scene-timings.json`.
+   - Use FFmpeg pans, zooms, and crossfades for `artwork-only` scenes.
+   - For kinetic text, diagrams, charts, equations, or artwork with overlays, copy `../../assets/remotion-overlay-template` into the writable project, place scene images under `public/scenes`, place the joined narration under `public/audio`, and write `src/project.json` plus `output/overlay-project.json` from the resolved scene plan.
+   - Validate the overlay project before rendering:
+
+     ```powershell
+     node ../../scripts/validate-overlay-storyboard.mjs <copied-template>/src/project.json
+     ```
+
+   - Run visual-aware layout QA before the expensive render:
+
+     ```powershell
+     node <copied-template>/scripts/analyze-overlay-layout.mjs <copied-template>/src/project.json --json <copied-template>/output/layout-report.json
+     ```
+
+     Fix any text that collides with dense artwork, faces, hands, screens, borders, or the caption-safe area before rendering.
+     When scene objects, anchored groups, or text intents are present, run `npm run layout-fix` inside the copied template to apply safe group/text positions, then run `npm run layout-stills` to review one near-final still per scene before the full MP4 render.
+
+   - In the copied template run `npm install`, `npm run preflight`, `npm run type-check`, and `npm run render`. On Windows ARM64, use x64 Node under Windows emulation because Remotion does not publish a native ARM64 compositor.
    - Use each slide's `reveal_beats` to synchronize progressive draw-on strokes, text, orange underlines, arrows, highlights, callouts, diagram states, character emphasis, and subtle pans or zooms with the corresponding voiceover phrases.
    - Keep the slide's core layout stable between reveal beats so the audience experiences one coherent presentation slide rather than several unrelated shots.
    - Set each image's duration to `end_seconds - start_seconds`; never use a global fixed duration or a hard-coded loop length.
@@ -275,7 +293,7 @@ Produce the finished video in the user's current project workspace.
    - final video and final audio durations differ by no more than 50 ms,
    - no FFmpeg transition overlap has shortened the visual timeline,
    - no scene is duplicated accidentally,
-   - every slide uses the same declared theme and contains a legible, correctly spelled handwritten title, labels, and short annotations,
+   - every slide uses the same declared theme and its deterministic overlays contain a legible, correctly spelled handwritten-style title, labels, and short annotations,
    - when the default direction is selected, every slide follows the original chosen whiteboard theme without drifting into a literal copy of the reference,
    - every slide has at least one named recurring story character plus an explanatory visual,
    - every slide communicates exactly one clear idea and remains understandable without narration within two seconds,
@@ -297,6 +315,9 @@ Produce the finished video in the user's current project workspace.
    - every spoken word has a verified timing entry or an explicitly declared phrase-level fallback,
    - captions match the narration exactly, remain inside title-safe margins, and highlight the active word at the correct audible moment,
    - caption placement does not obscure essential slide content or conflict with the slide's own text,
+   - `output/overlay-project.json` passes the bundled validator whenever any scene uses a non-`artwork-only` strategy,
+   - `output/layout-report.json` exists for overlay renders and has no unexpected errors or warnings,
+   - every overlay stays inside its safe area, uses stable IDs, follows the correct `screen` or `artwork` coordinate space, respects declared layer depth, and starts at its resolved `startSeconds` or deterministic `startProgress`,
    - `output/source-essence.json` captures the source's central idea, essential support, meaningful qualifications, and final takeaway without tangents,
    - the narration covers every `must_understand_point`, contains no unsupported claims, and preserves important uncertainty,
    - a cold listener can understand the narration without seeing the source or visuals,
@@ -314,6 +335,8 @@ Produce the finished video in the user's current project workspace.
    - authoritative word timeline: `output/word-timings.json`
    - karaoke captions: `output/captions.ass`
    - locked voice configuration: `output/voice-config.json`
+   - editable overlay project: `output/overlay-project.json`
+   - overlay layout QA report: `output/layout-report.json`
    - render command: `output/render-command.txt`
 
 ## Storyboard sizing
