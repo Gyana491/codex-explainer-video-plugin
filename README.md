@@ -1,16 +1,22 @@
 # Codex Explainer Video Plugin
 
-## Prerequisites
+Turns a topic, script, article, or narration audio into a story-driven whiteboard explainer video: one pixel-verified storyboard, locked OpenAI voiceover per scene, word-focused karaoke captions, deterministic Remotion overlays, and local FFmpeg delivery.
 
-Before installing the plugin, make sure you have:
+```
+source → essence/story → storyboard sheet(s) → upscale → canonicalize
+       → per-scene voiceover ∥ (parallel with the above)
+       → measured timings → word captions → Remotion overlays → FFmpeg finalize
+```
+
+## Prerequisites
 
 - Codex installed and available from your terminal.
 - FFmpeg installed and available as `ffmpeg` and `ffprobe`.
 - Node.js and npm for videos that use animated shapes or essential text overlays.
-- Python with `pydub` for narration rhythm analysis. Python 3.13+ also needs `audioop-lts`.
+- Python with `pydub` and `faster-whisper` for narration rhythm analysis and word alignment. Python 3.13+ also needs `audioop-lts`.
 - A Codex workspace where generated video files can be saved.
 
-Verify FFmpeg:
+Verify FFmpeg and install Python dependencies (run from the plugin root):
 
 ```bash
 ffmpeg -version
@@ -37,52 +43,55 @@ The first command removes an older marketplace registration. If Codex reports th
 3. Open or create a writable workspace for the generated storyboard, audio, and video files.
 4. Confirm that FFmpeg is available in the same environment where Codex is running.
 
-No local API keys or MCP server configuration are required for the published plugin.
+No local API keys or MCP server configuration are required for the published plugin — see [Media service](#media-service) below for the default endpoint and self-hosting.
 
-The plugin uses OpenAI voiceover through its bundled media service; it does not use ElevenLabs. Storyboard panels can be combined with editable Remotion overlays for diagrams, charts, equations, labels, counters, kinetic text, and transparent foreground cutouts. Overlays support explicit depth, anchored groups, and separate artwork/screen coordinate spaces so annotations can follow camera motion while titles remain fixed. FFmpeg remains the final media-processing layer.
+## Quick start
 
-Overlay projects include a fast visual layout analyzer. Run it before the final Remotion render to catch text or filled shapes that collide with dense illustration detail:
-
-```bash
-npm run layout-check
+```
+codex plugin list
 ```
 
-The same checker can be run from the plugin root against an existing generated project:
+Confirm `codex-explainer-video-plugin` appears in the installed plugin list. In a new Codex task, try:
+
+```text
+Create a 4-minute whiteboard explainer video about how solar panels work. Use the default whiteboard style and voice. Save it in this workspace.
+```
+
+The skills carry the story, geometry, and production rules — the prompt only needs to state topic, duration, and any style preferences.
+
+## Media service
+
+The plugin uses OpenAI voiceover through its bundled media service; it does not use ElevenLabs. By default `.mcp.json` points at the author's Cloudflare Worker (`explainer-video-media-mcp.gyan491.workers.dev`). This is third-party infrastructure — availability and quotas are not guaranteed. For production use, self-host:
+
+```bash
+cd mcp-server
+cp .dev.vars.example .dev.vars   # set OPENAI_API_KEY and REPLICATE_API_TOKEN
+npm install
+npx wrangler deploy
+```
+
+Then point `.mcp.json`'s `url` at your deployed worker's `/mcp` endpoint. See `mcp-server/README.md` for local dev, R2 configuration, and secret management.
+
+## Overlays and layout QA
+
+Storyboard panels combine with editable Remotion overlays for diagrams, charts, equations, labels, counters, kinetic text, and transparent foreground cutouts. Overlays support explicit depth, anchored groups, and separate artwork/screen coordinate spaces so annotations follow camera motion while titles stay fixed. The default visual theme is whiteboard-style (paper background, dark ink, orange accent) — see `references/overlay-storyboard.md` for the `theme` block.
+
+Run the layout analyzer before the final Remotion render to catch text or filled shapes that collide with dense illustration detail:
 
 ```bash
 node scripts/analyze-overlay-layout.mjs my-video/src/project.json --json my-video/output/layout-report.json
 ```
 
-For smarter placement, add scene `objects`, anchored overlay `groups`, and element `intent` metadata in `project.json`, then run:
+For smarter placement, add scene `objects`, anchored overlay `groups`, and element `intent` metadata to `project.json`, then run `npm run layout-fix` (moves colliding or auto-place text) and `npm run layout-stills` (renders a contact sheet at `output/qa/layout/layout-contact-sheet.png` for review before a full render).
 
-```bash
-npm run layout-fix
-npm run layout-stills
-```
+A successful render leaves only the finalized `output/explainer-video.mp4`; the Remotion intermediate is kept only when finalization fails, for diagnosis.
 
-`layout-fix` can move individual text or complete anchored groups; `layout-stills` renders a quick contact sheet at `output/qa/layout/layout-contact-sheet.png` for review before a full MP4 render.
+## Troubleshooting
 
-A successful render leaves only the finalized `output/explainer-video.mp4`. The larger Remotion intermediate is retained only when finalization fails, so it remains available for diagnosis without accumulating duplicate deliverables.
-
-On Windows ARM64, run the bundled overlay template with x64 Node.js under Windows emulation because Remotion does not publish its native compositor for that architecture. The template preflight reports this clearly before rendering. Set `REMOTION_BROWSER_EXECUTABLE` to override browser discovery when a custom Chrome or Edge path is needed.
-
-## Verify the installation
-
-```bash
-codex plugin list
-```
-
-Confirm that `codex-explainer-video-plugin` appears in the installed plugin list.
-
-In a new Codex task, try:
-
-```text
-Create a 4-minute, story-driven whiteboard explainer presentation about how solar panels work. First extract the source's central idea, 3-5 essential supporting points, evidence, meaningful qualifications, likely misconception, and final takeaway. Choose the simplest truthful narrative spine and define an audience proxy, starting state, goal, stakes, obstacle, midpoint turning point, payoff, emotional arc, recurring visual motif, open loops, and callbacks. Make every scene cause the next through a complication, question, consequence, or discovery; avoid an “and then” list of facts, close every open loop, and return visual callbacks with changed meaning. Rewrite the essence as a simple, relatable story anyone can understand without inventing unsupported claims or manufactured drama. Use 5-6 slides per minute and make each slide communicate one clear idea within two seconds. Use distinct, uncrowded compositions with characters and illustrative objects while reserving clear areas for deterministic arrows, diagrams, charts, titles, labels, equations, and exact values. Use handwritten-style overlays with orange only for important words, arrows, outcomes, underlines, highlights, and sparse emphasis marks; never place text over faces, hands, screens, or detailed artwork. Treat any supplied visual reference as broad inspiration only and never copy its exact layout, characters, typography, colors, or objects. Make exactly one image-generation call containing every scene and the full hard geometry contract; never generate a retry, correction, replacement, or alternate. Then upscale that single contact sheet, extract its scene artwork, and use fast local processing to rebuild a pixel-verified 4:3 landscape master whose populated and blank slots are all exact 16:9. Finish every scene, generate one separate voiceover file per scene using the same locked voice configuration, measure and concatenate those clips, generate word-level karaoke captions, render editable Remotion overlays, then stitch the final video. Synchronize 2-4 progressive reveal beats within each slide to the measured per-scene voiceover, and keep a short caption phrase visible while highlighting the currently spoken word in orange. Reject any master, populated slot, blank slot, exported scene, or overlay project that fails its validator without making another image-generation call.
-```
+- **Windows ARM64:** run the bundled overlay template with x64 Node.js under Windows emulation — Remotion does not publish a native ARM64 compositor. The template preflight reports this before rendering. Set `REMOTION_BROWSER_EXECUTABLE` to override browser discovery for a custom Chrome or Edge path.
+- **Word alignment unavailable:** if `faster-whisper` is not installed, `scripts/align_words.py` falls back to proportional phrase-level timing and reports it in `timing_source` — captions stay phrase-accurate but are not word-verified.
 
 ## Reinstall or update
-
-To refresh the marketplace registration and reinstall the latest published version, run:
 
 ```bash
 codex plugin marketplace remove codex-explainer-video-plugin

@@ -18,3 +18,15 @@ npm run dev
 The MCP endpoint is `/mcp`. A simple health check is available at `/health`.
 
 API keys belong in `.dev.vars` locally and in Wrangler secrets in production. Do not put them in `wrangler.jsonc`.
+
+## Deploy your own
+
+The plugin's default `.mcp.json` points at the author's deployment. To run your own:
+
+```bash
+npx wrangler secret put OPENAI_API_KEY
+npx wrangler secret put REPLICATE_API_TOKEN
+npx wrangler deploy
+```
+
+Update `PUBLIC_MEDIA_BASE_URL` in `wrangler.jsonc` and the R2 bucket binding before deploying. After deploy, point the plugin's `.mcp.json` `url` at `https://<your-worker>.workers.dev/mcp`.
