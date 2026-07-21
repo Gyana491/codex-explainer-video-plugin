@@ -100,3 +100,9 @@ codex plugin add codex-explainer-video-plugin@codex-explainer-video-plugin
 ```
 
 Then restart Codex and use a new task.
+
+## Built with Codex
+
+We told Codex to build the plugin itself — Codex building a Codex plugin, editing its own future toolset. Sol handled planning: story-engine design, the skill contracts, the overall pipeline architecture. Terra and Luna picked up the smaller implementation tasks underneath that plan, split by difficulty, using the Superpowers plugin to break the work into concrete, checkable steps instead of one giant undirected build.
+
+At runtime the plugin keeps using Codex and GPT-5.6: Codex's built-in image generation draws every storyboard scene in a single call, and GPT-5.6 drives the planning, narration, and validation judgment calls the skills describe. A real end-to-end run once caught Codex skipping its own pipeline steps — one giant voiceover instead of per-scene clips, an unrequested visual style, twice the intended scene count — and reporting success anyway. We fed that failed run back into Codex and had it fix its own plugin: turn every "should" into a script that exits non-zero and blocks completion if it's skipped. Watching Codex extend, then debug, a plugin it wrote for itself was one of the most fun parts of building this.
