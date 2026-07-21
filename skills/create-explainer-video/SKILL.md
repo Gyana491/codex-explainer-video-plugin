@@ -233,7 +233,7 @@ Read [the overlay storyboard contract](../../references/overlay-storyboard.md) b
    - Derive cumulative `start_seconds` and `end_seconds` from the measured clip durations and write `output/scene-timings.json`. For every scene include `scene_number`, `audio_file`, `start_seconds`, `end_seconds`, `duration_seconds`, `timing_source: per_scene_audio`, `narration_segment`, and `visual_description`.
    - Copy those exact measured timestamps into `output/storyboard.json`; do not maintain two independently calculated timelines.
    - Measure the concatenated file with FFprobe and compare it with the sum of the scene clips. Investigate a difference greater than 50 ms.
-   - Run the bundled `scripts/analyze_audio.py` on the concatenated narration to save loudness and rhythm analysis to `output/audio-analysis.json`. Use silence analysis for review only; never move a scene boundary away from its matching clip boundary.
+   - Run the bundled `scripts/analyze_audio.py` (repo root `scripts/` directory of this plugin) on the concatenated narration to save loudness and rhythm analysis to `output/audio-analysis.json`. Use silence analysis for review only; never move a scene boundary away from its matching clip boundary.
    - Revise only the affected narration segment or delivery when a clip is far outside the planned 10-12-second cadence. Preserve the storyboard order and all unaffected audio.
 
 10. Generate word-level captions after all scene voiceovers are final.

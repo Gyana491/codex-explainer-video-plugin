@@ -8,3 +8,33 @@ assets/remotion-overlay-template/public/scenes/*
 !assets/remotion-overlay-template/public/scenes/template-background.svg
 assets/remotion-overlay-template/public/audio/*
 !assets/remotion-overlay-template/public/audio/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Editor / local settings
+.vscode/
+.claude/settings.local.json
+
+# Cloudflare / build
+.wrangler/
+dist/
