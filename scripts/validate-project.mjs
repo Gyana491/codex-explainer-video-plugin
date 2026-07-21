@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Deterministic post-build gate for an explainer video project directory.
-// Usage: node scripts/validate-project.mjs [projectRoot] [--json report.json]
+// Usage: node scripts/validate-project.mjs [projectRoot] [--json report.json] [--render-project <path/to/project.json>]
 
 import fs from "node:fs";
 import path from "node:path";
@@ -9,8 +9,10 @@ import {spawnSync} from "node:child_process";
 const args = process.argv.slice(2);
 let root = ".";
 let jsonOut = null;
+let renderProjectPath = null;
 for (let i = 0; i < args.length; i += 1) {
   if (args[i] === "--json") jsonOut = args[++i];
+  else if (args[i] === "--render-project") renderProjectPath = args[++i];
   else root = args[i];
 }
 const R = (...p) => path.join(root, ...p);
@@ -74,6 +76,7 @@ const audioDir = R("assets", "audio", "scenes");
 const audioFiles = fs.existsSync(audioDir)
   ? fs.readdirSync(audioDir).filter((f) => /^scene-\d+\.(mp3|wav)$/i.test(f)).sort()
   : [];
+check("audio-scenes-exist", audioFiles.length > 0, "no assets/audio/scenes/scene-NN.(mp3|wav) files");
 check("audio-image-pairing", audioFiles.length === sceneFiles.length,
   `${audioFiles.length} audio vs ${sceneFiles.length} images`);
 
@@ -112,15 +115,44 @@ if (Array.isArray(scenes) && scenes.length) {
 check("voice-config-exists", !!readJson(R("output", "voice-config.json")),
   "output/voice-config.json missing");
 
-// 8. Word timings (optional file, hard rules if present)
+// 8. Word timings (required — captions cannot exist without this having run)
 const wt = readJson(R("output", "word-timings.json"));
+check("word-timings-exist", !!wt, "output/word-timings.json missing or unparsable");
 if (wt) {
   const words = wt.words ?? wt;
+  check("word-timings-non-empty", Array.isArray(words) && words.length > 0,
+    "word-timings.json has zero words");
   let ordered = true;
   for (let i = 1; i < words.length; i += 1) {
     if (words[i].start_seconds < words[i - 1].start_seconds - 1e-3) ordered = false;
   }
   check("word-timings-ordered", ordered, "word start times not monotonic");
+}
+
+// 9. Captions file
+let captionsSize = 0;
+try { captionsSize = fs.statSync(R("output", "captions.ass")).size; } catch { /* missing */ }
+check("captions-exist", captionsSize > 0, "output/captions.ass missing or empty");
+
+// 10. Render-project scene durations vs measured scene-timings (optional cross-check)
+if (renderProjectPath) {
+  const renderProject = readJson(renderProjectPath);
+  check("render-project-readable", !!renderProject, `${renderProjectPath} missing or unparsable`);
+  if (renderProject && Array.isArray(scenes) && scenes.length) {
+    const byNumber = new Map(scenes.map((s) => [s.scene_number, s]));
+    for (const scene of renderProject.scenes ?? []) {
+      const n = Number(String(scene.id).match(/\d+/)?.[0]);
+      const measured = byNumber.get(n);
+      if (!measured) {
+        check(`render-scene-${scene.id}-has-timing`, false, `no scene-timings entry for ${scene.id}`);
+        continue;
+      }
+      const expected = measured.end_seconds - measured.start_seconds;
+      check(`render-scene-${scene.id}-duration-matches`,
+        Math.abs(scene.durationSeconds - expected) <= 0.05,
+        `project.json durationSeconds ${scene.durationSeconds}s vs measured ${expected.toFixed(3)}s`);
+    }
+  }
 }
 
 const report = {passed: pass.length, failed: findings.length, findings};

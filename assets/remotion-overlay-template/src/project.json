@@ -5,9 +5,10 @@
   "audioPath": "audio/voiceover.mp3",
   "voiceoverDurationSeconds": 6,
   "theme": {
-    "backgroundColor": "#F7F3E8",
-    "ink": "#1F2937",
-    "accent": "#F97316"
+    "backgroundColor": "#FFF3D5",
+    "ink": "#172234",
+    "accent": "#EF6C26",
+    "accentSecondary": "#184D9C"
   },
   "scenes": [
     {
@@ -35,9 +36,9 @@
           {"id": "output-label", "text": "Useful output", "role": "label", "x": 0.75, "y": 0.5, "align": "center", "groupId": "output-group"}
         ],
         "shapes": [
-          {"id": "input-node", "type": "circle", "x": 0.25, "y": 0.5, "width": 0.16, "height": 0.16, "fill": "#2563eb", "groupId": "input-group"},
-          {"id": "flow-arrow", "type": "arrow", "x": 0.36, "y": 0.5, "x2": 0.64, "y2": 0.5, "stroke": "#f8fafc", "strokeWidth": 8, "coordinateSpace": "artwork", "zIndex": 12},
-          {"id": "output-node", "type": "rounded-rect", "x": 0.75, "y": 0.5, "width": 0.2, "height": 0.15, "fill": "#f97316", "groupId": "output-group"}
+          {"id": "input-node", "type": "circle", "x": 0.25, "y": 0.5, "width": 0.16, "height": 0.16, "fill": "#184D9C", "groupId": "input-group"},
+          {"id": "flow-arrow", "type": "arrow", "x": 0.36, "y": 0.5, "x2": 0.64, "y2": 0.5, "stroke": "#172234", "strokeWidth": 8, "coordinateSpace": "artwork", "zIndex": 12},
+          {"id": "output-node", "type": "rounded-rect", "x": 0.75, "y": 0.5, "width": 0.2, "height": 0.15, "fill": "#EF6C26", "groupId": "output-group"}
         ],
         "animationCues": [
           {"action": "reveal", "target": "scene-title", "startSeconds": 0.1, "durationSeconds": 0.5},

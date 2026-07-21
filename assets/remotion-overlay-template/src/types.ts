@@ -134,20 +134,22 @@ export interface ProjectTheme {
   backgroundColor?: string;
   ink?: string;
   accent?: string;
+  accentSecondary?: string;
   fontFamily?: string;
   textShadow?: string;
 }
 
-export const WHITEBOARD_THEME: Required<ProjectTheme> = {
-  backgroundColor: "#F7F3E8",
-  ink: "#1F2937",
-  accent: "#F97316",
-  fontFamily: "'Segoe Print', 'Patrick Hand', 'Comic Sans MS', cursive",
+export const HOUSE_THEME: Required<ProjectTheme> = {
+  backgroundColor: "#FFF3D5",
+  ink: "#172234",
+  accent: "#EF6C26",
+  accentSecondary: "#184D9C",
+  fontFamily: "'Inter', 'Segoe UI', Arial, sans-serif",
   textShadow: "none",
 };
 
 export function resolveTheme(theme?: ProjectTheme): Required<ProjectTheme> {
-  return {...WHITEBOARD_THEME, ...theme};
+  return {...HOUSE_THEME, ...theme};
 }
 
 export interface ExplainerProject {

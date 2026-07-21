@@ -12,9 +12,10 @@ Use this contract when a scene needs editable text, diagrams, charts, equations,
   "audioPath": "audio/voiceover.mp3",
   "voiceoverDurationSeconds": 42.8,
   "theme": {
-    "backgroundColor": "#F7F3E8",
-    "ink": "#1F2937",
-    "accent": "#F97316"
+    "backgroundColor": "#FFF3D5",
+    "ink": "#172234",
+    "accent": "#EF6C26",
+    "accentSecondary": "#184D9C"
   },
   "scenes": []
 }
@@ -24,7 +25,7 @@ Use `1080x1920` for vertical output. Scene durations must sum to the measured vo
 
 ## Theme
 
-`theme` is optional. All fields default to the whiteboard palette shown above: `backgroundColor` (paper shell + inter-scene fade color), `ink` (default shape stroke and text color), `accent` (default shape fill and highlight color), `fontFamily` (default handwritten-style stack), `textShadow` (default `none`). Set `theme` only to depart from the whiteboard direction. Per-element `color`, `fill`, and `stroke` on a shape or text element always override the theme — omit them to inherit it.
+`theme` is optional. All fields default to the house editorial palette shown above: `backgroundColor` (paper shell + inter-scene fade color), `ink` (default shape stroke and text color), `accent` (default shape fill and highlight color), `accentSecondary` (second accent for variety — cool tone against the warm `accent`), `fontFamily` (default editorial sans stack), `textShadow` (default `none`). Set `theme` only when the user explicitly requests a different visual direction — see `house-style.md`. When departing from the default, pick `ink`/`accent`/`accentSecondary` from the actual generated artwork's palette, not arbitrarily. Per-element `color`, `fill`, and `stroke` on a shape or text element always override the theme — omit them to inherit it.
 
 ## Scene shape
 
@@ -154,6 +155,20 @@ Place transparent PNG, WebP, or SVG files under `public/overlays` and declare th
 ```
 
 Use cutouts to let arrows, diagrams, or cards pass behind an illustrated character or object. Keep the full background plate as the lowest layer; add only the foreground pieces needed to create useful depth.
+
+## Cutout extraction
+
+When the master storyboard prompt includes a chroma-key asset tray (see `house-style.md` § Cutout tray), extract each cutout after the scene panels are canonicalized:
+
+1. Crop each tray cell from the upscaled sheet with FFmpeg (`-vf crop=W:H:X:Y`), using the tray geometry you declared in the image prompt — the tray sits in its own reserved region, separate from the scene grid, so its cell rectangles are computed the same way panel rectangles are, just not written to `storyboard-geometry.json`.
+2. Key each cropped cell to a transparent PNG:
+
+   ```powershell
+   node <plugin-root>/scripts/extract-cutouts.mjs <cropped-cell.png> public/overlays/<name>.png --color 0xFF00FF
+   ```
+
+   Use `--color 0x00FF00` when the tray used green chroma instead of magenta. The script reports if the result has no meaningful transparency (chroma key failed) — recrop or regenerate that cell rather than shipping an opaque cutout.
+3. Declare the result as an `assets` entry (see above) with `coordinateSpace` and `zIndex` chosen so it reads correctly against the scene's other layers.
 
 ## Shapes
 

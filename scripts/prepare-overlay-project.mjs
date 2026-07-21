@@ -51,3 +51,16 @@ if (fs.existsSync(templateModules)) {
   console.log(`Installed once in template, linked into project (${linkType}).`);
 }
 console.log(`Project ready: ${path.resolve(dest)}`);
+
+if (process.platform === "win32" && process.arch === "arm64") {
+  const candidates = [
+    process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, "CodexTools", "node-x64", "node.exe"),
+    "C:\\tools\\node-x64\\node.exe",
+  ].filter(Boolean);
+  const found = candidates.find((p) => fs.existsSync(p));
+  console.log(
+    found
+      ? `Note: this is win32 arm64 — Remotion needs x64 Node to render. Found one at ${found}; prepend its directory to PATH before running npm/preflight/render in ${path.resolve(dest)}.`
+      : `Note: this is win32 arm64 — Remotion needs x64 Node to render. No x64 build found at the usual locations (${candidates.join(", ")}); install one before running npm/preflight/render in ${path.resolve(dest)}.`,
+  );
+}

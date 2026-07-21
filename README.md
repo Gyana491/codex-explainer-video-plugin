@@ -1,6 +1,6 @@
 # Codex Explainer Video Plugin
 
-Turns a topic, script, article, or narration audio into a story-driven whiteboard explainer video: one pixel-verified storyboard, locked OpenAI voiceover per scene, word-focused karaoke captions, deterministic Remotion overlays, and local FFmpeg delivery.
+Turns a topic, script, article, or narration audio into a story-driven explainer video: one pixel-verified storyboard of at most 6 scenes, locked OpenAI voiceover per scene, word-focused karaoke captions, deterministic Remotion overlays, and local FFmpeg delivery.
 
 ```
 source → essence/story → storyboard sheet(s) → upscale → canonicalize
@@ -54,7 +54,7 @@ codex plugin list
 Confirm `codex-explainer-video-plugin` appears in the installed plugin list. In a new Codex task, try:
 
 ```text
-Create a 4-minute whiteboard explainer video about how solar panels work. Use the default whiteboard style and voice. Save it in this workspace.
+Create an explainer video about how solar panels work. Use the default style and voice. Save it in this workspace.
 ```
 
 The skills carry the story, geometry, and production rules — the prompt only needs to state topic, duration, and any style preferences.
@@ -74,7 +74,7 @@ Then point `.mcp.json`'s `url` at your deployed worker's `/mcp` endpoint. See `m
 
 ## Overlays and layout QA
 
-Storyboard panels combine with editable Remotion overlays for diagrams, charts, equations, labels, counters, kinetic text, and transparent foreground cutouts. Overlays support explicit depth, anchored groups, and separate artwork/screen coordinate spaces so annotations follow camera motion while titles stay fixed. The default visual theme is whiteboard-style (paper background, dark ink, orange accent) — see `references/overlay-storyboard.md` for the `theme` block.
+Storyboard panels combine with editable Remotion overlays for diagrams, charts, equations, labels, counters, kinetic text, and transparent foreground cutouts. Overlays support explicit depth, anchored groups, and separate artwork/screen coordinate spaces so annotations follow camera motion while titles stay fixed. The default visual theme is an editorial paper-collage style (cream background, dark ink, warm and cool accents, Inter typography) — see `references/house-style.md` for the full direction and `references/overlay-storyboard.md` for the `theme` block.
 
 Run the layout analyzer before the final Remotion render to catch text or filled shapes that collide with dense illustration detail:
 
