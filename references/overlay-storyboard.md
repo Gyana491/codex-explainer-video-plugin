@@ -11,11 +11,20 @@ Use this contract when a scene needs editable text, diagrams, charts, equations,
   "height": 1080,
   "audioPath": "audio/voiceover.mp3",
   "voiceoverDurationSeconds": 42.8,
+  "theme": {
+    "backgroundColor": "#F7F3E8",
+    "ink": "#1F2937",
+    "accent": "#F97316"
+  },
   "scenes": []
 }
 ```
 
 Use `1080x1920` for vertical output. Scene durations must sum to the measured voiceover duration within 0.25 seconds.
+
+## Theme
+
+`theme` is optional. All fields default to the whiteboard palette shown above: `backgroundColor` (paper shell + inter-scene fade color), `ink` (default shape stroke and text color), `accent` (default shape fill and highlight color), `fontFamily` (default handwritten-style stack), `textShadow` (default `none`). Set `theme` only to depart from the whiteboard direction. Per-element `color`, `fill`, and `stroke` on a shape or text element always override the theme — omit them to inherit it.
 
 ## Scene shape
 

@@ -19,4 +19,7 @@ if (configuredBrowser) {
 Config.setCodec("h264");
 Config.setAudioCodec("aac");
 Config.setPixelFormat("yuv420p");
+Config.setVideoImageFormat("jpeg");
+Config.setJpegQuality(90);
+Config.setCrf(18);
 

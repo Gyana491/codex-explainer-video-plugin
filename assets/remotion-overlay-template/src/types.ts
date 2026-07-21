@@ -130,6 +130,26 @@ export interface ExplainerScene {
   overlay?: SceneOverlay;
 }
 
+export interface ProjectTheme {
+  backgroundColor?: string;
+  ink?: string;
+  accent?: string;
+  fontFamily?: string;
+  textShadow?: string;
+}
+
+export const WHITEBOARD_THEME: Required<ProjectTheme> = {
+  backgroundColor: "#F7F3E8",
+  ink: "#1F2937",
+  accent: "#F97316",
+  fontFamily: "'Segoe Print', 'Patrick Hand', 'Comic Sans MS', cursive",
+  textShadow: "none",
+};
+
+export function resolveTheme(theme?: ProjectTheme): Required<ProjectTheme> {
+  return {...WHITEBOARD_THEME, ...theme};
+}
+
 export interface ExplainerProject {
   fps: number;
   width: number;
@@ -137,5 +157,6 @@ export interface ExplainerProject {
   audioPath: string;
   voiceoverDurationSeconds: number;
   backgroundColor?: string;
+  theme?: ProjectTheme;
   scenes: ExplainerScene[];
 }

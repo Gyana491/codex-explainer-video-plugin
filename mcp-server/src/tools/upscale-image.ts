@@ -14,10 +14,10 @@ export function registerUpscaleImage(server: McpServer, env: Env): void {
 		"upscale_image",
 		{
 			description:
-				"Upscale an existing storyboard or scene image with Real-ESRGAN. imageUrl accepts an HTTP(S) URL or a base64 image data URI. Keep faceEnhance false for illustrations and storyboards. The result is saved to R2.",
+				"Upscale an existing storyboard or scene image with Real-ESRGAN. imageUrl accepts an HTTP(S) URL or a base64 image data URI (URL strongly preferred; data URIs are a last resort). Choose the smallest scale that brings each grid panel to roughly 1920px wide: scale = ceil((1920 * columns) / masterWidth), clamped to 2-10. Keep faceEnhance false for illustrations. The result is saved to R2.",
 			inputSchema: {
 				imageUrl: imageInputSchema,
-				scale: z.number().min(2).max(10).default(10),
+				scale: z.number().min(2).max(10).default(4),
 				faceEnhance: z.boolean().default(false),
 				filename: z.string().max(100).optional(),
 			},

@@ -4,7 +4,11 @@
   "height": 1080,
   "audioPath": "audio/voiceover.mp3",
   "voiceoverDurationSeconds": 6,
-  "backgroundColor": "#0f172a",
+  "theme": {
+    "backgroundColor": "#F7F3E8",
+    "ink": "#1F2937",
+    "accent": "#F97316"
+  },
   "scenes": [
     {
       "id": "scene-01",

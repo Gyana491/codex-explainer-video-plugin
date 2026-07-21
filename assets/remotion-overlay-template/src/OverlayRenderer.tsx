@@ -9,9 +9,20 @@ import type {
   LayoutObject,
   OverlayAsset,
   OverlayGroup,
+  ProjectTheme,
   SceneOverlay,
   Shape,
 } from "./types";
+
+type ResolvedTheme = Required<ProjectTheme>;
+
+function withAlpha(hex: string, alpha: number): string {
+  const v = hex.replace("#", "");
+  const r = parseInt(v.slice(0, 2), 16);
+  const g = parseInt(v.slice(2, 4), 16);
+  const b = parseInt(v.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
 
 type Layer =
   | {kind: "shape"; element: Shape}
@@ -27,7 +38,8 @@ export const OverlayRenderer: React.FC<{
   width: number;
   height: number;
   artworkTransform: string;
-}> = ({overlay, objects, frame, sceneFrames, fps, width, height, artworkTransform}) => {
+  theme: ResolvedTheme;
+}> = ({overlay, objects, frame, sceneFrames, fps, width, height, artworkTransform, theme}) => {
   if (!overlay) return null;
   const cues = overlay.animationCues ?? [];
   const groups = new Map((overlay.groups ?? []).map((group) => [group.id, group]));
@@ -71,11 +83,11 @@ export const OverlayRenderer: React.FC<{
               }}
             >
               {layer.kind === "shape" ? (
-                <ShapeElement shape={layer.element} state={state} width={width} height={height} />
+                <ShapeElement shape={layer.element} state={state} width={width} height={height} theme={theme} />
               ) : layer.kind === "asset" ? (
                 <AssetElement asset={layer.element} state={state} />
               ) : (
-                <TextElement text={layer.element} state={state} />
+                <TextElement text={layer.element} state={state} theme={theme} />
               )}
             </div>
           </div>
@@ -95,18 +107,19 @@ function defaultSpace(group?: OverlayGroup): CoordinateSpace {
   return group?.anchorTo ? "artwork" : "screen";
 }
 
-const ShapeElement: React.FC<{shape: Shape; state: AnimationState; width: number; height: number}> = ({
+const ShapeElement: React.FC<{shape: Shape; state: AnimationState; width: number; height: number; theme: ResolvedTheme}> = ({
   shape,
   state,
   width: projectWidth,
   height: projectHeight,
+  theme,
 }) => {
   const x = shape.x * projectWidth;
   const y = shape.y * projectHeight;
   const width = (shape.width ?? 0.1) * projectWidth;
   const height = (shape.height ?? 0.1) * projectHeight;
-  const stroke = shape.stroke ?? "#f8fafc";
-  const fill = shape.fill ?? "#2563eb";
+  const stroke = shape.stroke ?? theme.ink;
+  const fill = shape.fill ?? theme.accent;
   const strokeWidth = shape.strokeWidth ?? 5;
 
   if (shape.type === "line" || shape.type === "arrow") {
@@ -137,7 +150,7 @@ const ShapeElement: React.FC<{shape: Shape; state: AnimationState; width: number
     return (
       <SvgCanvas width={projectWidth} height={projectHeight}>
         <g opacity={state.visibility} transform={`translate(${x} ${y}) scale(${state.scale}) translate(${-x} ${-y})`}>
-          <rect x={x} y={y} width={width} height={height} rx={height / 2} fill="rgba(255,255,255,0.24)" />
+          <rect x={x} y={y} width={width} height={height} rx={height / 2} fill={withAlpha(theme.ink, 0.15)} />
           <rect x={x} y={y} width={width * Math.min(state.draw, state.visibility)} height={height} rx={height / 2} fill={fill} />
         </g>
       </SvgCanvas>
@@ -186,7 +199,7 @@ const AssetElement: React.FC<{asset: OverlayAsset; state: AnimationState}> = ({a
   />
 );
 
-const TextElement: React.FC<{text: EssentialText; state: AnimationState}> = ({text, state}) => {
+const TextElement: React.FC<{text: EssentialText; state: AnimationState; theme: ResolvedTheme}> = ({text, state, theme}) => {
   const displayed =
     text.numericValue === undefined
       ? text.text
@@ -211,13 +224,13 @@ const TextElement: React.FC<{text: EssentialText; state: AnimationState}> = ({te
         transform: `${anchor} translateY(${translateY}px) scale(${state.scale})`,
         transformOrigin: "center center",
         textAlign: text.align ?? "center",
-        color: text.color ?? "#f8fafc",
-        background: state.highlight > 0 ? `rgba(249,115,22,${0.12 + state.highlight * 0.7})` : text.background,
+        color: text.color ?? theme.ink,
+        background: state.highlight > 0 ? withAlpha(theme.accent, 0.12 + state.highlight * 0.7) : text.background,
         borderRadius: 18,
         padding: text.background || state.highlight > 0 ? "14px 20px" : 0,
         opacity: state.visibility,
-        textShadow: "0 2px 18px rgba(0,0,0,0.45)",
-        fontFamily: "Inter, Arial, sans-serif",
+        textShadow: theme.textShadow,
+        fontFamily: theme.fontFamily,
         ...roleStyles[text.role],
       }}
     >

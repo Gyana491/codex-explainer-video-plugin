@@ -1,12 +1,14 @@
 import React from "react";
 import {AbsoluteFill, Audio, Img, Sequence, interpolate, staticFile, useCurrentFrame} from "remotion";
 import {OverlayRenderer} from "./OverlayRenderer";
+import {resolveTheme} from "./types";
 import type {ExplainerProject, ExplainerScene} from "./types";
 
 export const ExplainerVideo: React.FC<{project: ExplainerProject}> = ({project}) => {
+  const theme = resolveTheme(project.theme);
   let startFrame = 0;
   return (
-    <AbsoluteFill style={{backgroundColor: project.backgroundColor ?? "#0f172a"}}>
+    <AbsoluteFill style={{backgroundColor: project.backgroundColor ?? theme.backgroundColor}}>
       <Audio src={staticFile(project.audioPath)} />
       {project.scenes.map((scene) => {
         const durationInFrames = Math.max(1, Math.round(scene.durationSeconds * project.fps));
@@ -20,6 +22,7 @@ export const ExplainerVideo: React.FC<{project: ExplainerProject}> = ({project})
               fps={project.fps}
               width={project.width}
               height={project.height}
+              theme={theme}
             />
           </Sequence>
         );
@@ -28,12 +31,20 @@ export const ExplainerVideo: React.FC<{project: ExplainerProject}> = ({project})
   );
 };
 
-const Scene: React.FC<{scene: ExplainerScene; durationInFrames: number; fps: number; width: number; height: number}> = ({
+const Scene: React.FC<{
+  scene: ExplainerScene;
+  durationInFrames: number;
+  fps: number;
+  width: number;
+  height: number;
+  theme: ReturnType<typeof resolveTheme>;
+}> = ({
   scene,
   durationInFrames,
   fps,
   width,
   height,
+  theme,
 }) => {
   const frame = useCurrentFrame();
   const progress = frame / Math.max(1, durationInFrames - 1);
@@ -60,6 +71,7 @@ const Scene: React.FC<{scene: ExplainerScene; durationInFrames: number; fps: num
         frame={frame}
         sceneFrames={durationInFrames}
         fps={fps}
+        theme={theme}
         width={width}
         height={height}
         artworkTransform={`translateX(${translateX}%) scale(${scale})`}
